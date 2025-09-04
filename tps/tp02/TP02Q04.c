@@ -15,10 +15,17 @@ int somaDigitos(int n) {
 }
 
 int main() {
-    int numero;
+    char linha[100];
 
-    // Lê números da entrada até o fim do arquivo (EOF).
-    while (scanf("%d", &numero) != EOF) {
+    while (scanf(" %99[^\n]", linha) != EOF) {
+
+        if (strcmp(linha, "FIM") == 0) {
+            break; 
+        }
+
+        int numero = atoi(linha);
+        
+        // Chama a função e imprime o resultado
         int resultado = somaDigitos(numero);
         printf("%d\n", resultado);
     }
