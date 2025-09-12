@@ -1,4 +1,3 @@
-package labs.lab04;
 import java.util.Scanner;
 
 public class LAB04 {
@@ -6,9 +5,20 @@ public class LAB04 {
 	public static void main(String[] args) { 
 		Scanner scan = new Scanner(System.in);
 		while(scan.hasNextLine()){
+			if (!scan.hasNextInt()) break; // Verifica se há um próximo inteiro
 			int n = scan.nextInt();
 			int[] largada = new int[n];
 			int[] chegada = new int[n];
+			
+			// Lê os valores de largada
+			for (int i = 0; i < n; i++) {
+				largada[i] = scan.nextInt();
+			}
+			
+			// Lê os valores de chegada
+			for (int i = 0; i < n; i++) {
+				chegada[i] = scan.nextInt();
+			}
 			
 			ultrapassagem(n, largada, chegada);
 		}
@@ -46,7 +56,8 @@ public class LAB04 {
                 }
             }
         }
-        bubble(resposta);
+        int ultrapassagens = bubble(resposta);
+        System.out.println(ultrapassagens);
     }
 
 }
