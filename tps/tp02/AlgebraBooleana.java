@@ -1,3 +1,5 @@
+package tps.tp02;
+
 public class AlgebraBooleana {
     
     public static boolean evaluateBooleanExpression(String expression, boolean[] inputs) {

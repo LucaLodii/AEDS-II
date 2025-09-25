@@ -1,3 +1,5 @@
+package tps.tp03;
+
 import java.util.Scanner;
 
 public class InversaoRec {

@@ -1,3 +1,5 @@
+package tps.tp02;
+
 import java.util.Scanner;
 
 public class Inversao {

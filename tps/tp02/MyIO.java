@@ -1,3 +1,5 @@
+package tps.tp02;
+
 import java.io.*;
 import java.nio.charset.*;
 
