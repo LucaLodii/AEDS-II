@@ -2,7 +2,6 @@ import java.util.Scanner;
 
 public class QuadroDeMedalhas {
 
-    // --- Parte 3: O Método Principal ---
     public static void main(String[] args) {
         Scanner scan = new Scanner(System.in);
         int n = scan.nextInt();
@@ -30,7 +29,6 @@ public class QuadroDeMedalhas {
         scan.close();
     }
 
-    // --- Parte 2: A Ordenação Manual (Bubble Sort) ---
     public static void ordenarPaises(Pais[] paises) {
         int n = paises.length;
         for (int i = 0; i < n - 1; i++) {
@@ -46,7 +44,6 @@ public class QuadroDeMedalhas {
         }
     }
 
-    // --- Parte 1: A Lógica de Comparação Customizada ---
     public static boolean deveTrocar(Pais p1, Pais p2) {
         // Regra 1: Ouro (decrescente)
         if (p1.ouro < p2.ouro) return true;
