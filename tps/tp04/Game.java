@@ -1,9 +1,7 @@
-package tps.tp04;
-
 import java.io.File;
 import java.util.Scanner;
 
-public class Game {
+public class GameNoLibs {
     private int id;
     private String name;
     private String releaseDate;
@@ -19,38 +17,7 @@ public class Game {
     private String[] genres;
     private String[] tags;
 
-    public Game() {
-    };
-
-    public Game(
-            int id,
-            String name,
-            String releaseDate,
-            int estimatedOwners,
-            float price,
-            String[] supportedLanguage,
-            int metacriticScore,
-            float userScore,
-            int achievements,
-            String[] publishers,
-            String[] developers,
-            String[] categories,
-            String[] genres,
-            String[] tags) {
-        setId(id);
-        setName(name);
-        setReleaseDate(releaseDate);
-        setEstimatedOwners(estimatedOwners);
-        setPrice(price);
-        setSupportedLanguage(supportedLanguage);
-        setMetacriticScore(metacriticScore);
-        setUserScore(userScore);
-        setAchievements(achievements);
-        setPublishers(publishers);
-        setDevelopers(developers);
-        setCategories(categories);
-        setGenres(genres);
-        setTags(tags);
+    public GameNoLibs() {
     }
 
     public int getId() {
@@ -165,138 +132,269 @@ public class Game {
         this.tags = tags;
     }
 
+    public static int myStrlen(String str) {
+        int len = 0;
+        for (int i = 0; i < str.length(); i++) {
+            len++;
+        }
+        return len;
+    }
+
+    public static String myTrim(String str) {
+        if (str == null) return "";
+
+        int start = 0;
+        int end = str.length() - 1;
+
+        while (start <= end && (str.charAt(start) == ' ' || str.charAt(start) == '\t' ||
+               str.charAt(start) == '\n' || str.charAt(start) == '\r')) {
+            start++;
+        }
+
+        while (end >= start && (str.charAt(end) == ' ' || str.charAt(end) == '\t' ||
+               str.charAt(end) == '\n' || str.charAt(end) == '\r')) {
+            end--;
+        }
+
+        if (start > end) return "";
+
+        char[] result = new char[end - start + 1];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = str.charAt(start + i);
+        }
+        return new String(result);
+    }
+
+    public static int myStrcmp(String s1, String s2) {
+        int len1 = s1.length();
+        int len2 = s2.length();
+        int minLen = len1 < len2 ? len1 : len2;
+
+        for (int i = 0; i < minLen; i++) {
+            if (s1.charAt(i) != s2.charAt(i)) {
+                return s1.charAt(i) - s2.charAt(i);
+            }
+        }
+        return len1 - len2;
+    }
+
     public static int stringToInt(String str) {
         int numero = 0;
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
-            int tmp = c - '0';
-            numero = numero * 10 + tmp;
+            if (c >= '0' && c <= '9') {
+                int tmp = c - '0';
+                numero = numero * 10 + tmp;
+            }
         }
         return numero;
     }
 
     public static String removeAspas(String str) {
         if (str == null) return "";
-        return str.replaceAll("[\'\"]", "");
+
+        char[] temp = new char[str.length()];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c != '\'' && c != '"') {
+                temp[j++] = c;
+            }
+        }
+        return new String(temp, 0, j);
     }
 
     public static String removeColchetes(String str) {
         if (str == null) return "";
-        return str.replaceAll("[\\[\\]]", "");
+
+        char[] temp = new char[str.length()];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c != '[' && c != ']') {
+                temp[j++] = c;
+            }
+        }
+        return new String(temp, 0, j);
     }
 
     public static String removeVirgula(String str) {
         if (str == null) return "";
-        return str.replaceAll(",", "");
+
+        char[] temp = new char[str.length()];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c != ',') {
+                temp[j++] = c;
+            }
+        }
+        return new String(temp, 0, j);
     }
 
     public static String removeAllNotNumbers(String str) {
         if (str == null) return "0";
-        return str.replaceAll("[^0-9]", "");
+
+        char[] temp = new char[str.length()];
+        int j = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c >= '0' && c <= '9') {
+                temp[j++] = c;
+            }
+        }
+
+        if (j == 0) return "0";
+        return new String(temp, 0, j);
+    }
+
+    public static boolean isMonth(String str) {
+        return myStrcmp(str, "Jan") == 0 || myStrcmp(str, "Feb") == 0 ||
+               myStrcmp(str, "Mar") == 0 || myStrcmp(str, "Apr") == 0 ||
+               myStrcmp(str, "May") == 0 || myStrcmp(str, "Jun") == 0 ||
+               myStrcmp(str, "Jul") == 0 || myStrcmp(str, "Aug") == 0 ||
+               myStrcmp(str, "Sep") == 0 || myStrcmp(str, "Oct") == 0 ||
+               myStrcmp(str, "Nov") == 0 || myStrcmp(str, "Dec") == 0;
+    }
+
+    public static String[] mySplit(String str, char delimiter) {
+        if (str == null) return new String[0];
+
+        // Count delimiters
+        int count = 1;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == delimiter) count++;
+        }
+
+        String[] result = new String[count];
+        int start = 0;
+        int index = 0;
+
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == delimiter) {
+                char[] token = new char[i - start];
+                for (int j = 0; j < token.length; j++) {
+                    token[j] = str.charAt(start + j);
+                }
+                result[index++] = new String(token);
+                start = i + 1;
+            }
+        }
+
+        // Last token
+        char[] token = new char[str.length() - start];
+        for (int j = 0; j < token.length; j++) {
+            token[j] = str.charAt(start + j);
+        }
+        result[index] = new String(token);
+
+        return result;
     }
 
     public static String stringToDate(String str) {
-        if (str == null || str.trim().isEmpty()) {
+        if (str == null || str.length() == 0) {
             return "";
         }
-        
-        // Remove quotes and clean the string
-        str = removeAspas(str).trim();
-        
-        String[] date = str.split(" ");
+
+        str = removeAspas(str);
+        str = myTrim(str);
+
+        if (str.length() == 0) {
+            return "";
+        }
+
+        String[] date = mySplit(str, ' ');
         if (date.length == 0) {
             return "";
         }
-        
+
         String month = "01";
         String day = "01";
         String year = "";
-        
-        // Parse month
-        switch (date[0]) {
-            case "Jan":
-                month = "01";
-                break;
-            case "Feb":
-                month = "02";
-                break;
-            case "Mar":
-                month = "03";
-                break;
-            case "Apr":
-                month = "04";
-                break;
-            case "May":
-                month = "05";
-                break;
-            case "Jun":
-                month = "06";
-                break;
-            case "Jul":
-                month = "07";
-                break;
-            case "Aug":
-                month = "08";
-                break;
-            case "Sep":
-                month = "09";
-                break;
-            case "Oct":
-                month = "10";
-                break;
-            case "Nov":
-                month = "11";
-                break;
-            case "Dec":
-                month = "12";
-                break;
-            default:
-                // If first part is not a month, treat as day
-                day = removeVirgula(date[0]);
-                if (day.isEmpty()) day = "01";
-                month = "01";
-                break;
+
+        if (myStrcmp(date[0], "Jan") == 0) month = "01";
+        else if (myStrcmp(date[0], "Feb") == 0) month = "02";
+        else if (myStrcmp(date[0], "Mar") == 0) month = "03";
+        else if (myStrcmp(date[0], "Apr") == 0) month = "04";
+        else if (myStrcmp(date[0], "May") == 0) month = "05";
+        else if (myStrcmp(date[0], "Jun") == 0) month = "06";
+        else if (myStrcmp(date[0], "Jul") == 0) month = "07";
+        else if (myStrcmp(date[0], "Aug") == 0) month = "08";
+        else if (myStrcmp(date[0], "Sep") == 0) month = "09";
+        else if (myStrcmp(date[0], "Oct") == 0) month = "10";
+        else if (myStrcmp(date[0], "Nov") == 0) month = "11";
+        else if (myStrcmp(date[0], "Dec") == 0) month = "12";
+        else {
+            day = removeVirgula(date[0]);
+            if (day.length() == 0) day = "01";
         }
-        
-        // Parse day and year
+
         if (date.length >= 2) {
-            if (month.equals("01") && !date[0].matches("Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")) {
-                // Already handled above
-            } else {
-                day = removeVirgula(date[1]);
-                if (day.isEmpty()) day = "01";
+            if (myStrcmp(month, "01") != 0 || isMonth(date[0])) {
+                if (isMonth(date[0])) {
+                    day = removeVirgula(date[1]);
+                    if (day.length() == 0) day = "01";
+                }
             }
         }
-        
+
         if (date.length >= 3) {
             year = removeVirgula(date[2]);
-        } else if (date.length == 2 && !month.equals("01")) {
+        } else if (date.length == 2 && myStrcmp(month, "01") != 0) {
             year = removeVirgula(date[1]);
         }
-        
-        if (year.isEmpty()) year = "2000";
 
-        if(stringToInt(day) < 10)
-            day = "0" + day;
-        
+        if (year.length() == 0) year = "2000";
+
+        if (stringToInt(day) < 10 && day.charAt(0) != '0') {
+            char[] temp = new char[day.length() + 1];
+            temp[0] = '0';
+            for (int i = 0; i < day.length(); i++) {
+                temp[i + 1] = day.charAt(i);
+            }
+            day = new String(temp);
+        }
+
         return day + "/" + month + "/" + year;
     }
 
     public static float stringToFloat(String str) {
-        if (str == null || str.trim().isEmpty()) {
+        if (str == null || str.length() == 0) {
             return 0.0f;
         }
-        
-        str = str.trim();
-        if (str.equals("Free to Play")) {
+
+        str = myTrim(str);
+
+        if (myStrcmp(str, "Free to Play") == 0) {
             return 0.0f;
         }
-        
-        try {
-            return Float.parseFloat(str);
-        } catch (NumberFormatException e) {
-            return 0.0f;
+
+        float result = 0.0f;
+        int sign = 1;
+        int i = 0;
+
+        if (str.charAt(i) == '-') {
+            sign = -1;
+            i++;
         }
+
+        while (i < str.length() && str.charAt(i) >= '0' && str.charAt(i) <= '9') {
+            result = result * 10.0f + (str.charAt(i) - '0');
+            i++;
+        }
+
+        if (i < str.length() && str.charAt(i) == '.') {
+            i++;
+            float divisor = 10.0f;
+            while (i < str.length() && str.charAt(i) >= '0' && str.charAt(i) <= '9') {
+                result = result + (str.charAt(i) - '0') / divisor;
+                divisor *= 10.0f;
+                i++;
+            }
+        }
+
+        result = (int)(result * 100 + 0.5f) / 100.0f;
+        return result * sign;
     }
 
     public static int validScore(int score) {
@@ -304,36 +402,58 @@ public class Game {
     }
 
     public static float validScoreFloat(String score) {
-        if (score == null || score.trim().isEmpty() || score.equals("tdb"))
+        if (score == null) return -1.0f;
+
+        score = myTrim(score);
+
+        if (score.length() == 0 || myStrcmp(score, "tdb") == 0)
             return -1.0f;
-        float scoreFloat = stringToFloat(score);
-        return scoreFloat;
+
+        return stringToFloat(score);
     }
 
     public static String[] parseCSVLine(String line) {
-        java.util.List<String> fields = new java.util.ArrayList<>();
+        String[] tempFields = new String[20];
+        int fieldCount = 0;
         boolean inQuotes = false;
-        StringBuilder currentField = new StringBuilder();
-        
+        char[] currentField = new char[2048];
+        int charIndex = 0;
+
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
-            
+
             if (c == '"') {
                 inQuotes = !inQuotes;
             } else if (c == ',' && !inQuotes) {
-                fields.add(currentField.toString());
-                currentField = new StringBuilder();
+                tempFields[fieldCount++] = new String(currentField, 0, charIndex);
+                charIndex = 0;
             } else {
-                currentField.append(c);
+                currentField[charIndex++] = c;
             }
         }
-        fields.add(currentField.toString());
-        
-        return fields.toArray(new String[0]);
+        tempFields[fieldCount++] = new String(currentField, 0, charIndex);
+
+        String[] fields = new String[fieldCount];
+        for (int i = 0; i < fieldCount; i++) {
+            fields[i] = tempFields[i];
+        }
+
+        return fields;
     }
 
-    
-    public static void printGame(Game game) {
+    public static void printArrayField(String field) {
+        String[] tokens = mySplit(field, ',');
+
+        for (int i = 0; i < tokens.length; i++) {
+            String token = myTrim(tokens[i]);
+            if (i > 0) {
+                System.out.print(", ");
+            }
+            System.out.print(token);
+        }
+    }
+
+    public static void printGame(GameNoLibs game) {
         System.out.print("=> ");
         System.out.print(game.getId() + " ## ");
         System.out.print(game.getName() + " ## ");
@@ -341,141 +461,119 @@ public class Game {
         System.out.print(game.getEstimatedOwners() + " ## ");
         System.out.print(game.getPrice() + " ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getSupportedLanguage().length; i++) {
-            if (i == game.getSupportedLanguage().length - 1) {
-                System.out.print(game.getSupportedLanguage()[i].trim());
-            } else {
-                System.out.print(game.getSupportedLanguage()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getSupportedLanguage()[0]);
         System.out.print("] ## ");
         System.out.print(game.getMetacriticScore() + " ## ");
         System.out.print(game.getUserScore() + " ## ");
         System.out.print(game.getAchievements() + " ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getPublishers().length; i++) {
-            if (i == game.getPublishers().length - 1) {
-                System.out.print(game.getPublishers()[i].trim());
-            } else {
-                System.out.print(game.getPublishers()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getPublishers()[0]);
         System.out.print("] ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getDevelopers().length; i++) {
-            if (i == game.getDevelopers().length - 1) {
-                System.out.print(game.getDevelopers()[i].trim());
-            } else {
-                System.out.print(game.getDevelopers()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getDevelopers()[0]);
         System.out.print("] ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getCategories().length; i++) {
-            if (i == game.getCategories().length - 1) {
-                System.out.print(game.getCategories()[i].trim());
-            } else {
-                System.out.print(game.getCategories()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getCategories()[0]);
         System.out.print("] ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getGenres().length; i++) {
-            if (i == game.getGenres().length - 1) {
-                System.out.print(game.getGenres()[i].trim());
-            } else {
-                System.out.print(game.getGenres()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getGenres()[0]);
         System.out.print("] ## ");
         System.out.print("[");
-        for (int i = 0; i < game.getTags().length; i++) {
-            if (i == game.getTags().length - 1) {
-                System.out.print(game.getTags()[i].trim());
-            } else {
-                System.out.print(game.getTags()[i].trim() + ", ");
-            }
-        }
+        printArrayField(game.getTags()[0]);
         System.out.print("] ##");
         System.out.println();
     }
-    
-    public static void searchGame(Game[] games, int index) {
+
+    public static void searchGame(GameNoLibs[] games, int index) {
         Scanner scan = new Scanner(System.in);
         String idSearch = "";
         int idSearchInt = 0;
         try {
-            while (!idSearch.equals("FIM")) {
+            while (myStrcmp(idSearch, "FIM") != 0) {
                 if (scan.hasNextLine()) {
                     idSearch = scan.nextLine();
-                    if (!idSearch.equals("FIM")) {
+                    if (myStrcmp(idSearch, "FIM") != 0) {
                         idSearchInt = stringToInt(idSearch);
                         for (int i = 0; i < index; i++) {
                             if (games[i].getId() == idSearchInt && idSearchInt != 0) {
                                 printGame(games[i]);
-                                break; // Found the game, move to next search
+                                break;
                             }
                         }
                     }
                 } else {
-                    break; // No more input available
+                    break;
                 }
             }
         } finally {
             scan.close();
         }
     }
+
     public static void main(String[] args) {
-        Game[] games = new Game[10000];
+        GameNoLibs[] games = new GameNoLibs[10000];
         int index = 0;
         try {
-            // Try /tmp/ directory first as specified in the requirements
             File arquivo = new File("/tmp/games.csv");
             if (!arquivo.exists()) {
-                // Try current directory as fallback
                 arquivo = new File("games.csv");
             }
             if (!arquivo.exists()) {
-                // Try current directory with explicit path
                 arquivo = new File("./games.csv");
             }
-            
+
             if (!arquivo.exists()) {
                 System.err.println("Error reading file: games.csv (No such file or directory)");
-                // Continue with empty games array for grading
             } else {
                 Scanner sc = new Scanner(arquivo);
-                
-                // Skip header line
+
                 if (sc.hasNextLine()) {
                     sc.nextLine();
                 }
-                
+
                 while (sc.hasNextLine()) {
                     String line = sc.nextLine();
                     String[] fields = parseCSVLine(line);
-    
+
                     if (fields.length < 14) {
-                        System.err.println("Skipping malformed line with " + fields.length + " fields: " + line);
                         continue;
                     }
-    
-                    Game game = new Game();
+
+                    GameNoLibs game = new GameNoLibs();
                     game.setId(stringToInt(fields[0]));
                     game.setName(fields[1]);
                     game.setReleaseDate(stringToDate(fields[2]));
                     game.setEstimatedOwners(stringToInt(removeAllNotNumbers(fields[3])));
                     game.setPrice(stringToFloat(fields[4]));
-                    game.setSupportedLanguage(removeColchetes(removeAspas(fields[5])).split(","));
+
+                    String[] lang = new String[1];
+                    lang[0] = removeColchetes(removeAspas(fields[5]));
+                    game.setSupportedLanguage(lang);
+
                     game.setMetacriticScore(validScore(stringToInt(fields[6])));
                     game.setUserScore(validScoreFloat(fields[7]));
                     game.setAchievements(stringToInt(fields[8]));
-                    game.setPublishers(removeAspas(fields[9]).split(","));
-                    game.setDevelopers(removeAspas(fields[10]).split(","));
-                    game.setCategories(removeAspas(fields[11]).split(","));
-                    game.setGenres(removeAspas(fields[12]).split(","));
-                    game.setTags(removeAspas(fields[13]).split(","));
-                    
+
+                    String[] pub = new String[1];
+                    pub[0] = removeAspas(fields[9]);
+                    game.setPublishers(pub);
+
+                    String[] dev = new String[1];
+                    dev[0] = removeAspas(fields[10]);
+                    game.setDevelopers(dev);
+
+                    String[] cat = new String[1];
+                    cat[0] = removeAspas(fields[11]);
+                    game.setCategories(cat);
+
+                    String[] gen = new String[1];
+                    gen[0] = removeAspas(fields[12]);
+                    game.setGenres(gen);
+
+                    String[] tag = new String[1];
+                    tag[0] = removeAspas(fields[13]);
+                    game.setTags(tag);
+
                     games[index] = game;
                     index++;
                 }
@@ -483,12 +581,11 @@ public class Game {
             }
         } catch (java.io.FileNotFoundException e) {
             System.err.println("Error reading file: games.csv (No such file or directory)");
-            // Continue with empty games array for grading
         } catch (Exception e) {
             System.err.println("Error reading file: " + e.getMessage());
             e.printStackTrace();
         }
-    
+
         searchGame(games, index);
     }
 }

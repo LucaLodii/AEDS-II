@@ -1,282 +1,335 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-#define MAX_GAMES 10000
-#define MAX_LINE 10000
-#define MAX_FIELD 1000
-#define MAX_ARRAY 100
 
 typedef struct {
     int id;
-    char name[500];
-    char releaseDate[20];
+    char name[256];
+    char releaseDate[11];
     int estimatedOwners;
     float price;
-    char supportedLanguage[MAX_ARRAY][200];
-    int supportedLanguageCount;
+    char supportedLanguage[1024];
     int metacriticScore;
     float userScore;
     int achievements;
-    char publishers[MAX_ARRAY][200];
-    int publishersCount;
-    char developers[MAX_ARRAY][200];
-    int developersCount;
-    char categories[MAX_ARRAY][200];
-    int categoriesCount;
-    char genres[MAX_ARRAY][200];
-    int genresCount;
-    char tags[MAX_ARRAY][200];
-    int tagsCount;
+    char publishers[512];
+    char developers[512];
+    char categories[512];
+    char genres[512];
+    char tags[1024];
 } Game;
 
-// Utility functions
+int myStrlen(const char* str) {
+    int len = 0;
+    while (str[len] != '\0') len++;
+    return len;
+}
+
+void myStrcpy(char* dest, const char* src) {
+    int i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0';
+}
+
+int myStrcmp(const char* s1, const char* s2) {
+    int i = 0;
+    while (s1[i] != '\0' && s2[i] != '\0') {
+        if (s1[i] != s2[i]) {
+            return s1[i] - s2[i];
+        }
+        i++;
+    }
+    return s1[i] - s2[i];
+}
+
 int stringToInt(const char* str) {
-    if (str == NULL || strlen(str) == 0) return 0;
     int numero = 0;
     int i = 0;
-    while (str[i] != '\0' && isdigit(str[i])) {
-        numero = numero * 10 + (str[i] - '0');
+    while (str[i] != '\0') {
+        if (str[i] >= '0' && str[i] <= '9') {
+            numero = numero * 10 + (str[i] - '0');
+        }
         i++;
     }
     return numero;
 }
 
-void removeAspas(char* dest, const char* str) {
-    if (str == NULL) {
-        dest[0] = '\0';
-        return;
+void trim(char* str) {
+    int start = 0;
+    int end = myStrlen(str) - 1;
+
+    while (str[start] == ' ' || str[start] == '\t' || str[start] == '\n' || str[start] == '\r') {
+        start++;
     }
+
+    while (end >= start && (str[end] == ' ' || str[end] == '\t' || str[end] == '\n' || str[end] == '\r')) {
+        end--;
+    }
+
+    int i;
+    for (i = 0; i <= end - start; i++) {
+        str[i] = str[start + i];
+    }
+    str[i] = '\0';
+}
+
+void removeAspas(char* str) {
+    char temp[2048];
     int j = 0;
     for (int i = 0; str[i] != '\0'; i++) {
         if (str[i] != '\'' && str[i] != '"') {
-            dest[j++] = str[i];
+            temp[j++] = str[i];
         }
     }
-    dest[j] = '\0';
+    temp[j] = '\0';
+    myStrcpy(str, temp);
 }
 
-void removeColchetes(char* dest, const char* str) {
-    if (str == NULL) {
-        dest[0] = '\0';
-        return;
-    }
+void removeColchetes(char* str) {
+    char temp[2048];
     int j = 0;
     for (int i = 0; str[i] != '\0'; i++) {
         if (str[i] != '[' && str[i] != ']') {
-            dest[j++] = str[i];
+            temp[j++] = str[i];
         }
     }
-    dest[j] = '\0';
+    temp[j] = '\0';
+    myStrcpy(str, temp);
 }
 
-void removeVirgula(char* dest, const char* str) {
-    if (str == NULL) {
-        dest[0] = '\0';
-        return;
-    }
+void removeVirgula(char* str) {
+    char temp[256];
     int j = 0;
     for (int i = 0; str[i] != '\0'; i++) {
         if (str[i] != ',') {
-            dest[j++] = str[i];
+            temp[j++] = str[i];
         }
     }
-    dest[j] = '\0';
+    temp[j] = '\0';
+    myStrcpy(str, temp);
 }
 
-void removeAllNotNumbers(char* dest, const char* str) {
-    if (str == NULL) {
-        strcpy(dest, "0");
-        return;
-    }
+void removeAllNotNumbers(char* str) {
+    char temp[256];
     int j = 0;
     for (int i = 0; str[i] != '\0'; i++) {
-        if (isdigit(str[i])) {
-            dest[j++] = str[i];
+        if (str[i] >= '0' && str[i] <= '9') {
+            temp[j++] = str[i];
         }
     }
-    dest[j] = '\0';
+    temp[j] = '\0';
     if (j == 0) {
-        strcpy(dest, "0");
+        myStrcpy(str, "0");
+    } else {
+        myStrcpy(str, temp);
     }
 }
 
-void trim(char* str) {
-    if (str == NULL) return;
-    
-    // Trim leading spaces
-    int start = 0;
-    while (str[start] != '\0' && isspace(str[start])) {
-        start++;
-    }
-    
-    // Trim trailing spaces
-    int end = strlen(str) - 1;
-    while (end >= 0 && isspace(str[end])) {
-        end--;
-    }
-    
-    // Move string to beginning
-    int j = 0;
-    for (int i = start; i <= end; i++) {
-        str[j++] = str[i];
-    }
-    str[j] = '\0';
+int isMonth(const char* str) {
+    return (myStrcmp(str, "Jan") == 0 || myStrcmp(str, "Feb") == 0 ||
+            myStrcmp(str, "Mar") == 0 || myStrcmp(str, "Apr") == 0 ||
+            myStrcmp(str, "May") == 0 || myStrcmp(str, "Jun") == 0 ||
+            myStrcmp(str, "Jul") == 0 || myStrcmp(str, "Aug") == 0 ||
+            myStrcmp(str, "Sep") == 0 || myStrcmp(str, "Oct") == 0 ||
+            myStrcmp(str, "Nov") == 0 || myStrcmp(str, "Dec") == 0);
 }
 
-void stringToDate(char* dest, const char* str) {
-    if (str == NULL || strlen(str) == 0) {
-        strcpy(dest, "");
+void stringToDate(const char* input, char* output) {
+    if (input == NULL || input[0] == '\0') {
+        myStrcpy(output, "");
         return;
     }
-    
-    char clean[500];
-    removeAspas(clean, str);
-    trim(clean);
-    
-    char date[3][50];
-    int partCount = 0;
-    char* token = strtok(clean, " ");
-    while (token != NULL && partCount < 3) {
-        strcpy(date[partCount++], token);
-        token = strtok(NULL, " ");
+
+    char str[256];
+    myStrcpy(str, input);
+    removeAspas(str);
+    trim(str);
+
+    char* tokens[3] = {NULL, NULL, NULL};
+    int tokenCount = 0;
+    char* ptr = str;
+    char* start = ptr;
+
+    while (*ptr != '\0' && tokenCount < 3) {
+        if (*ptr == ' ') {
+            *ptr = '\0';
+            tokens[tokenCount++] = start;
+            start = ptr + 1;
+        }
+        ptr++;
     }
-    
-    if (partCount == 0) {
-        strcpy(dest, "");
+    if (tokenCount < 3 && start[0] != '\0') {
+        tokens[tokenCount++] = start;
+    }
+
+    if (tokenCount == 0) {
+        myStrcpy(output, "");
         return;
     }
-    
+
     char month[3] = "01";
     char day[3] = "01";
     char year[5] = "2000";
-    
-    // Parse month
-    if (strcmp(date[0], "Jan") == 0) strcpy(month, "01");
-    else if (strcmp(date[0], "Feb") == 0) strcpy(month, "02");
-    else if (strcmp(date[0], "Mar") == 0) strcpy(month, "03");
-    else if (strcmp(date[0], "Apr") == 0) strcpy(month, "04");
-    else if (strcmp(date[0], "May") == 0) strcpy(month, "05");
-    else if (strcmp(date[0], "Jun") == 0) strcpy(month, "06");
-    else if (strcmp(date[0], "Jul") == 0) strcpy(month, "07");
-    else if (strcmp(date[0], "Aug") == 0) strcpy(month, "08");
-    else if (strcmp(date[0], "Sep") == 0) strcpy(month, "09");
-    else if (strcmp(date[0], "Oct") == 0) strcpy(month, "10");
-    else if (strcmp(date[0], "Nov") == 0) strcpy(month, "11");
-    else if (strcmp(date[0], "Dec") == 0) strcpy(month, "12");
+
+    if (myStrcmp(tokens[0], "Jan") == 0) myStrcpy(month, "01");
+    else if (myStrcmp(tokens[0], "Feb") == 0) myStrcpy(month, "02");
+    else if (myStrcmp(tokens[0], "Mar") == 0) myStrcpy(month, "03");
+    else if (myStrcmp(tokens[0], "Apr") == 0) myStrcpy(month, "04");
+    else if (myStrcmp(tokens[0], "May") == 0) myStrcpy(month, "05");
+    else if (myStrcmp(tokens[0], "Jun") == 0) myStrcpy(month, "06");
+    else if (myStrcmp(tokens[0], "Jul") == 0) myStrcpy(month, "07");
+    else if (myStrcmp(tokens[0], "Aug") == 0) myStrcpy(month, "08");
+    else if (myStrcmp(tokens[0], "Sep") == 0) myStrcpy(month, "09");
+    else if (myStrcmp(tokens[0], "Oct") == 0) myStrcpy(month, "10");
+    else if (myStrcmp(tokens[0], "Nov") == 0) myStrcpy(month, "11");
+    else if (myStrcmp(tokens[0], "Dec") == 0) myStrcpy(month, "12");
     else {
-        // If first part is not a month, treat as day
-        char dayTemp[50];
-        removeVirgula(dayTemp, date[0]);
-        if (strlen(dayTemp) > 0) {
-            int dayInt = stringToInt(dayTemp);
-            sprintf(day, "%02d", dayInt);
-        }
+        myStrcpy(day, tokens[0]);
+        removeVirgula(day);
+        if (day[0] == '\0') myStrcpy(day, "01");
     }
-    
-    // Parse day and year
-    if (partCount >= 2) {
-        if (strcmp(month, "01") != 0) {
-            char dayTemp[50];
-            removeVirgula(dayTemp, date[1]);
-            if (strlen(dayTemp) > 0) {
-                int dayInt = stringToInt(dayTemp);
-                sprintf(day, "%02d", dayInt);
+
+    if (tokenCount >= 2) {
+        if (myStrcmp(month, "01") != 0 || isMonth(tokens[0])) {
+            if (isMonth(tokens[0])) {
+                myStrcpy(day, tokens[1]);
+                removeVirgula(day);
+                if (day[0] == '\0') myStrcpy(day, "01");
             }
         }
     }
-    
-    if (partCount >= 3) {
-        char yearTemp[50];
-        removeVirgula(yearTemp, date[2]);
-        if (strlen(yearTemp) > 0) {
-            strcpy(year, yearTemp);
-        }
-    } else if (partCount == 2 && strcmp(month, "01") != 0) {
-        char yearTemp[50];
-        removeVirgula(yearTemp, date[1]);
-        if (strlen(yearTemp) > 0) {
-            strcpy(year, yearTemp);
-        }
+
+    if (tokenCount >= 3) {
+        myStrcpy(year, tokens[2]);
+        removeVirgula(year);
+    } else if (tokenCount == 2 && myStrcmp(month, "01") != 0) {
+        myStrcpy(year, tokens[1]);
+        removeVirgula(year);
     }
-    
-    sprintf(dest, "%s/%s/%s", day, month, year);
+
+    if (year[0] == '\0') myStrcpy(year, "2000");
+
+    if (stringToInt(day) < 10 && day[0] != '0' && day[0] != '\0') {
+        char temp[3] = "0";
+        int len = myStrlen(day);
+        for (int i = 0; i < len; i++) {
+            temp[i + 1] = day[i];
+        }
+        temp[len + 1] = '\0';
+        myStrcpy(day, temp);
+    }
+
+    int i = 0;
+    for (int j = 0; day[j] != '\0'; j++) output[i++] = day[j];
+    output[i++] = '/';
+    for (int j = 0; month[j] != '\0'; j++) output[i++] = month[j];
+    output[i++] = '/';
+    for (int j = 0; year[j] != '\0'; j++) output[i++] = year[j];
+    output[i] = '\0';
 }
 
 float stringToFloat(const char* str) {
-    if (str == NULL || strlen(str) == 0) {
+    if (str == NULL || str[0] == '\0') {
         return 0.0f;
     }
-    
-    char temp[100];
-    strcpy(temp, str);
-    trim(temp);
-    
-    if (strcmp(temp, "Free to Play") == 0) {
-        return 0.0f;
-    }
-    
-    return atof(temp);
-}
 
-int validScore(int score) {
-    return score;
+    char temp[256];
+    myStrcpy(temp, str);
+    trim(temp);
+
+    if (myStrcmp(temp, "Free to Play") == 0) {
+        return 0.0f;
+    }
+
+    float result = 0.0f;
+    int sign = 1;
+    int i = 0;
+
+    if (temp[i] == '-') {
+        sign = -1;
+        i++;
+    }
+
+    while (temp[i] >= '0' && temp[i] <= '9') {
+        result = result * 10.0f + (temp[i] - '0');
+        i++;
+    }
+
+    if (temp[i] == '.') {
+        i++;
+        float divisor = 10.0f;
+        while (temp[i] >= '0' && temp[i] <= '9') {
+            result = result + (temp[i] - '0') / divisor;
+            divisor *= 10.0f;
+            i++;
+        }
+    }
+
+    return result * sign;
 }
 
 float validScoreFloat(const char* score) {
-    if (score == NULL || strlen(score) == 0 || strcmp(score, "tdb") == 0) {
+    if (score == NULL) return -1.0f;
+
+    char temp[256];
+    myStrcpy(temp, score);
+    trim(temp);
+
+    if (temp[0] == '\0' || myStrcmp(temp, "tdb") == 0) {
         return -1.0f;
     }
-    return stringToFloat(score);
+
+    return stringToFloat(temp);
 }
 
-int parseCSVLine(char* line, char fields[][MAX_FIELD]) {
-    int fieldCount = 0;
+void parseCSVLine(const char* line, char fields[][2048], int* fieldCount) {
     int inQuotes = 0;
-    int fieldPos = 0;
-    
-    for (int i = 0; line[i] != '\0' && fieldCount < MAX_ARRAY; i++) {
+    int fieldIndex = 0;
+    int charIndex = 0;
+
+    for (int i = 0; line[i] != '\0' && fieldIndex < 20; i++) {
         char c = line[i];
-        
+
         if (c == '"') {
             inQuotes = !inQuotes;
         } else if (c == ',' && !inQuotes) {
-            fields[fieldCount][fieldPos] = '\0';
-            fieldCount++;
-            fieldPos = 0;
+            fields[fieldIndex][charIndex] = '\0';
+            fieldIndex++;
+            charIndex = 0;
         } else {
-            fields[fieldCount][fieldPos++] = c;
+            fields[fieldIndex][charIndex++] = c;
         }
     }
-    fields[fieldCount][fieldPos] = '\0';
-    fieldCount++;
-    
-    return fieldCount;
+    fields[fieldIndex][charIndex] = '\0';
+    *fieldCount = fieldIndex + 1;
 }
 
-void splitString(const char* str, char delimiter, char result[][200], int* count) {
-    *count = 0;
-    if (str == NULL || strlen(str) == 0) {
-        return;
-    }
-    
-    char temp[MAX_FIELD];
-    strcpy(temp, str);
-    
-    char* token = strtok(temp, &delimiter);
-    while (token != NULL && *count < MAX_ARRAY) {
-        // Trim the token
-        char trimmed[200];
-        strcpy(trimmed, token);
-        trim(trimmed);
-        
-        // Only add non-empty tokens
-        if (strlen(trimmed) > 0) {
-            strcpy(result[*count], trimmed);
-            (*count)++;
+void printArrayField(const char* field) {
+    char temp[2048];
+    myStrcpy(temp, field);
+
+    int start = 0;
+    int first = 1;
+
+    for (int i = 0; i <= myStrlen(temp); i++) {
+        if (temp[i] == ',' || temp[i] == '\0') {
+            char token[512];
+            int idx = 0;
+            for (int j = start; j < i; j++) {
+                token[idx++] = temp[j];
+            }
+            token[idx] = '\0';
+            trim(token);
+
+            if (!first) {
+                printf(", ");
+            }
+            printf("%s", token);
+            first = 0;
+            start = i + 1;
         }
-        token = strtok(NULL, &delimiter);
     }
 }
 
@@ -288,112 +341,61 @@ void printGame(Game* game) {
     printf("%d ## ", game->estimatedOwners);
     printf("%.1f ## ", game->price);
     printf("[");
-    for (int i = 0; i < game->supportedLanguageCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->supportedLanguage[i]);
-        trim(trimmed);
-        if (i == game->supportedLanguageCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
+    printArrayField(game->supportedLanguage);
     printf("] ## ");
     printf("%d ## ", game->metacriticScore);
     printf("%.1f ## ", game->userScore);
     printf("%d ## ", game->achievements);
     printf("[");
-    for (int i = 0; i < game->publishersCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->publishers[i]);
-        trim(trimmed);
-        if (i == game->publishersCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
+    printArrayField(game->publishers);
     printf("] ## ");
     printf("[");
-    for (int i = 0; i < game->developersCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->developers[i]);
-        trim(trimmed);
-        if (i == game->developersCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
+    printArrayField(game->developers);
     printf("] ## ");
     printf("[");
-    for (int i = 0; i < game->categoriesCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->categories[i]);
-        trim(trimmed);
-        if (i == game->categoriesCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
+    printArrayField(game->categories);
     printf("] ## ");
     printf("[");
-    for (int i = 0; i < game->genresCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->genres[i]);
-        trim(trimmed);
-        if (i == game->genresCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
+    printArrayField(game->genres);
     printf("] ## ");
     printf("[");
-    for (int i = 0; i < game->tagsCount; i++) {
-        char trimmed[200];
-        strcpy(trimmed, game->tags[i]);
-        trim(trimmed);
-        if (i == game->tagsCount - 1) {
-            printf("%s", trimmed);
-        } else {
-            printf("%s, ", trimmed);
-        }
-    }
-    printf("] ##");
-    printf("\n");
+    printArrayField(game->tags);
+    printf("] ##\n");
 }
 
 void searchGame(Game* games, int index) {
-    char idSearch[100];
-    
+    char idSearch[256];
+
     while (1) {
         if (fgets(idSearch, sizeof(idSearch), stdin) == NULL) {
             break;
         }
-        
-        // Remove newline
-        idSearch[strcspn(idSearch, "\n")] = '\0';
-        
-        if (strcmp(idSearch, "FIM") == 0) {
+
+        int len = myStrlen(idSearch);
+        if (len > 0 && idSearch[len - 1] == '\n') {
+            idSearch[len - 1] = '\0';
+        }
+
+        if (myStrcmp(idSearch, "FIM") == 0) {
             break;
         }
-        
+
         int idSearchInt = stringToInt(idSearch);
-        for (int i = 0; i < index; i++) {
-            if (games[i].id == idSearchInt && idSearchInt != 0) {
-                printGame(&games[i]);
-                break;
+        if (idSearchInt != 0) {
+            for (int i = 0; i < index; i++) {
+                if (games[i].id == idSearchInt) {
+                    printGame(&games[i]);
+                    break;
+                }
             }
         }
     }
 }
 
 int main() {
-    Game* games = (Game*)malloc(MAX_GAMES * sizeof(Game));
+    Game* games = (Game*)malloc(10000 * sizeof(Game));
     int index = 0;
-    
+
     FILE* arquivo = fopen("/tmp/games.csv", "r");
     if (arquivo == NULL) {
         arquivo = fopen("games.csv", "r");
@@ -401,74 +403,72 @@ int main() {
     if (arquivo == NULL) {
         arquivo = fopen("./games.csv", "r");
     }
-    
+
     if (arquivo == NULL) {
         fprintf(stderr, "Error reading file: games.csv (No such file or directory)\n");
     } else {
-        char line[MAX_LINE];
-        
-        // Skip header line
+        char line[8192];
+
         if (fgets(line, sizeof(line), arquivo) != NULL) {
-            // Header skipped
+            // Skip header
         }
-        
-        while (fgets(line, sizeof(line), arquivo) != NULL && index < MAX_GAMES) {
-            // Remove newline
-            line[strcspn(line, "\n")] = '\0';
-            
-            char fields[MAX_ARRAY][MAX_FIELD];
-            int fieldCount = parseCSVLine(line, fields);
-            
+
+        while (fgets(line, sizeof(line), arquivo) != NULL) {
+            int len = myStrlen(line);
+            if (len > 0 && line[len - 1] == '\n') {
+                line[len - 1] = '\0';
+            }
+
+            char fields[20][2048];
+            int fieldCount;
+            parseCSVLine(line, fields, &fieldCount);
+
             if (fieldCount < 14) {
-                fprintf(stderr, "Skipping malformed line with %d fields\n", fieldCount);
                 continue;
             }
-            
+
             Game game;
             game.id = stringToInt(fields[0]);
-            strcpy(game.name, fields[1]);
-            stringToDate(game.releaseDate, fields[2]);
-            
-            char temp[MAX_FIELD];
-            removeAllNotNumbers(temp, fields[3]);
+            myStrcpy(game.name, fields[1]);
+            stringToDate(fields[2], game.releaseDate);
+
+            char temp[256];
+            myStrcpy(temp, fields[3]);
+            removeAllNotNumbers(temp);
             game.estimatedOwners = stringToInt(temp);
-            
+
             game.price = stringToFloat(fields[4]);
-            
-            char langTemp[MAX_FIELD], langTemp2[MAX_FIELD];
-            removeAspas(langTemp, fields[5]);
-            removeColchetes(langTemp2, langTemp);
-            splitString(langTemp2, ',', game.supportedLanguage, &game.supportedLanguageCount);
-            
-            game.metacriticScore = validScore(stringToInt(fields[6]));
+
+            myStrcpy(game.supportedLanguage, fields[5]);
+            removeAspas(game.supportedLanguage);
+            removeColchetes(game.supportedLanguage);
+
+            game.metacriticScore = stringToInt(fields[6]);
             game.userScore = validScoreFloat(fields[7]);
             game.achievements = stringToInt(fields[8]);
-            
-            removeAspas(temp, fields[9]);
-            splitString(temp, ',', game.publishers, &game.publishersCount);
-            
-            removeAspas(temp, fields[10]);
-            splitString(temp, ',', game.developers, &game.developersCount);
-            
-            removeAspas(temp, fields[11]);
-            splitString(temp, ',', game.categories, &game.categoriesCount);
-            
-            removeAspas(temp, fields[12]);
-            splitString(temp, ',', game.genres, &game.genresCount);
-            
-            removeAspas(temp, fields[13]);
-            splitString(temp, ',', game.tags, &game.tagsCount);
-            
-            games[index] = game;
-            index++;
+
+            myStrcpy(game.publishers, fields[9]);
+            removeAspas(game.publishers);
+
+            myStrcpy(game.developers, fields[10]);
+            removeAspas(game.developers);
+
+            myStrcpy(game.categories, fields[11]);
+            removeAspas(game.categories);
+
+            myStrcpy(game.genres, fields[12]);
+            removeAspas(game.genres);
+
+            myStrcpy(game.tags, fields[13]);
+            removeAspas(game.tags);
+
+            games[index++] = game;
         }
-        
         fclose(arquivo);
     }
-    
+
     searchGame(games, index);
-    
     free(games);
+
     return 0;
 }
-
