@@ -1,0 +1,17 @@
+package labs.lab09;
+
+public class Principal {
+    public static void main(String[] args) throws Exception {
+        ArvoreBinaria arvore = new ArvoreBinaria();
+        arvore.inserir(10);
+        arvore.inserir(20);
+        arvore.inserir(30);
+        arvore.inserir(40);
+        arvore.inserir(50);
+        arvore.inserir(60);
+        arvore.inserir(70);
+        arvore.inserir(80);
+
+        System.out.println("A arvore esta balanceada? " + arvore.isBalanceada(arvore.getRaizNo()));
+    }
+}
