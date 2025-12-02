@@ -1,3 +1,4 @@
+package Treino;
 import java.util.Scanner;
 
 public class QuadroDeMedalhas {
