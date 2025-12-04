@@ -2,7 +2,7 @@
     LEIA ANTES DE USAR:
         * Essa calculadora foi feita pelo usuário LucasReis26 (Cinema) no github https://github.com/LucasReis26
         * Confira e dê uma estrela a ela se isso for útil para você: https://github.com/LucasReis26/calculadoraNotaAedsII/tree/master
-        * Obrigado Cinema!
+        * Agradeçam a ele
 */
 
 #include <stdio.h>
