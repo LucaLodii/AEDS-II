@@ -5,14 +5,13 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
-class NoArrayListHDR {
+class ConstantesHashRehash {
     public static final int MAX_GAMES = 500;
     public static final int MAX_INNER_ARRAY = 50;
     public static final int MAX_IDS = 100;
 }
 
-// Classe de Dados 
-class GameBinarioHDR {
+class GameRehash {
     int id;
     String name;
     String releaseDate;
@@ -34,30 +33,30 @@ class GameBinarioHDR {
     String[] tags;
     int tagsCount;
 
-    GameBinarioHDR() {
+    GameRehash() {
         this.id = 0;
         this.name = "";
         this.releaseDate = "";
         this.estimatedOwners = 0;
         this.price = 0.0f;
-        this.supportedLanguages = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.supportedLanguages = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.supportedLanguagesCount = 0;
         this.metacriticScore = -1;
         this.userScore = -1.0f;
         this.achievements = 0;
-        this.publishers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.publishers = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.publishersCount = 0;
-        this.developers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.developers = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.developersCount = 0;
-        this.categories = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.categories = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.categoriesCount = 0;
-        this.genres = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.genres = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.genresCount = 0;
-        this.tags = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+        this.tags = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
         this.tagsCount = 0;
     }
 
-    GameBinarioHDR(int id, String name, String releaseDate, int estimatedOwners, float price,
+    GameRehash(int id, String name, String releaseDate, int estimatedOwners, float price,
             String[] supportedLanguages, int supportedLanguagesCount, int metacriticScore, float userScore,
             int achievements,
             String[] publishers, int publishersCount, String[] developers, int developersCount,
@@ -87,31 +86,35 @@ class GameBinarioHDR {
     }
 }
 
-// Classe Hash
-class HashReserva {
-    GameBinarioHDR tabela[];
-    int tamanhoPrincipal, tamanhoReserva, tamanhoTotal, indiceReserva;
+class HashRehash {
+    GameRehash tabela[];
+    int tamanhoTabela;
 
-    public HashReserva() {
-        this(21, 9);
+    public HashRehash() {
+        this(21);
     }
 
-    public HashReserva(int tamanhoPrincipal, int tamanhoReserva) {
-        this.tamanhoPrincipal = tamanhoPrincipal;
-        this.tamanhoReserva = tamanhoReserva;
-        this.tamanhoTotal = tamanhoPrincipal + tamanhoReserva;
-        this.tabela = new GameBinarioHDR[this.tamanhoTotal];
-        for (int i = 0; i < tamanhoPrincipal; i++) {
+    // Construtor: cria tabela com tamanho 21
+    public HashRehash(int tamanhoTabela) {
+        this.tamanhoTabela = tamanhoTabela;
+        this.tabela = new GameRehash[this.tamanhoTabela];
+        for (int i = 0; i < tamanhoTabela; i++) {
             tabela[i] = null;
         }
-        indiceReserva = 0;
     }
 
+    // Hash: somaAscii mod 21
     public int hash(int somaAscii) {
-        return somaAscii % tamanhoPrincipal;
+        return somaAscii % tamanhoTabela;
     }
 
-    public boolean inserir(GameBinarioHDR game) {
+    // Rehash: (somaAscii + 1) mod 21
+    public int rehash(int somaAscii) {
+        return (somaAscii + 1) % tamanhoTabela;
+    }
+
+    // Inserir: coloca na posicao hash, se ocupada usa rehash
+    public boolean inserir(GameRehash game) {
         boolean inserido = false;
         if (game != null) {
             int somaAscii = 0;
@@ -119,67 +122,80 @@ class HashReserva {
                 somaAscii += (int) game.name.charAt(i);
             }
             int posicao = hash(somaAscii);
+            
             if (tabela[posicao] == null) {
                 tabela[posicao] = game;
                 inserido = true;
-            } else if (indiceReserva < tamanhoReserva) {
-                tabela[tamanhoPrincipal + indiceReserva] = game;
-                indiceReserva++;
-                inserido = true;
+            } else {
+                int posicaoRehash = rehash(somaAscii);
+                int tentativas = 1;
+                
+                while (tabela[posicaoRehash] != null && tentativas < tamanhoTabela) {
+                    posicaoRehash = (posicaoRehash + 1) % tamanhoTabela;
+                    tentativas++;
+                }
+                
+                if (tabela[posicaoRehash] == null) {
+                    tabela[posicaoRehash] = game;
+                    inserido = true;
+                }
             }
         }
         return inserido;
     }
 
+    // Pesquisar: busca na posicao hash, se nao achar usa rehash
     public boolean pesquisar(String name) {
         boolean encontrado = false;
         int somaAscii = 0;
         for (int i = 0; i < name.length(); i++) {
             somaAscii += (int) name.charAt(i);
         }
+        
         int posicao = hash(somaAscii);
+        
         if (tabela[posicao] != null && tabela[posicao].name.equals(name)) {
             encontrado = true;
-        } else if (tabela[posicao] != null) {
-            for (int i = 0; i < indiceReserva; i++) {
-                if (tabela[tamanhoPrincipal + i].name.equals(name)) {
-                    posicao = tamanhoPrincipal + i;
+        } else {
+            int posicaoRehash = rehash(somaAscii);
+            int tentativas = 1;
+            
+            while (tabela[posicaoRehash] != null && !encontrado && tentativas < tamanhoTabela) {
+                if (tabela[posicaoRehash].name.equals(name)) {
+                    posicao = posicaoRehash;
                     encontrado = true;
-                    i = indiceReserva;
+                } else {
+                    posicaoRehash = (posicaoRehash + 1) % tamanhoTabela;
+                    tentativas++;
                 }
             }
         }
-        // Imprime o resultado da busca
+        
         if (encontrado) {
             System.out.println(name + ":  (Posicao: " + posicao + ") SIM");
-            HashDiretaComReserva.logWriter.println(name + ":  (Posicao: " + posicao + ") SIM");
-        }
-        else {
+            HashDiretaComRehash.logWriter.println(name + ":  (Posicao: " + posicao + ") SIM");
+        } else {
             System.out.println(name + ":  (Posicao: " + posicao + ") NAO");
-            HashDiretaComReserva.logWriter.println(name + ":  (Posicao: " + posicao + ") NAO");
+            HashDiretaComRehash.logWriter.println(name + ":  (Posicao: " + posicao + ") NAO");
         }
         return encontrado;
     }
 }
 
-// Classe Principal
-public class HashDiretaComReserva {
+public class HashDiretaComRehash {
     public static Scanner sc;
     public static PrintWriter logWriter;
 
-    // Main
     public static void main(String[] args) {
         sc = new Scanner(System.in);
 
-        // Arquivo log
         try {
-            logWriter = new PrintWriter(new FileWriter("885732_hashReserva.txt"));
+            logWriter = new PrintWriter(new FileWriter("885732_hashRehash.txt"));
         } catch (IOException e) {
             System.err.println("Erro ao criar o arquivo de log: " + e.getMessage());
-            return; // Interrompe se não puder criar o log
+            return;
         }
 
-        // Capturando os ids que serão adicionados
         String entrada = sc.nextLine();
         String ids[] = new String[2000];
         int quantidadeIds = 0;
@@ -187,29 +203,25 @@ public class HashDiretaComReserva {
             ids[quantidadeIds] = entrada;
             entrada = sc.nextLine();
         }
-        // Criando a tabela hash
-        HashReserva hash = JogosDigitadosHashReserva.inicializacao(ids, quantidadeIds);
+        HashRehash hash = JogosDigitadosHashRehash.inicializacao(ids, quantidadeIds);
 
-        // Vendo a posição na árvore e mostrando
         entrada = sc.nextLine();
         while (!entrada.equals("FIM")) {
             hash.pesquisar(entrada);
-
             entrada = sc.nextLine();
         }
         sc.close();
     }
 }
 
-// Leitura de Arquivo
-class JogosDigitadosHashReserva {
+class JogosDigitadosHashRehash {
     public static Scanner leitorArquivo;
     static int posicaoLeitura = 0;
     static String[] ids;
     static int idsTamanho;
 
-    static HashReserva inicializacao(String[] idArray, int tamanho) {
-        HashReserva hash = new HashReserva();
+    static HashRehash inicializacao(String[] idArray, int tamanho) {
+        HashRehash hash = new HashRehash();
 
         ids = idArray;
         idsTamanho = tamanho;
@@ -243,24 +255,24 @@ class JogosDigitadosHashReserva {
                         int estimatedOwners = capturaEstimatedOwners(linha);
                         float price = capturaPrice(linha);
 
-                        String[] supportedLanguages = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] supportedLanguages = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int supportedLanguagesCount = capturaSupportedLanguages(linha, supportedLanguages);
                         int metacriticScore = capturaMetacriticScore(linha);
                         float userScore = capturaUserScore(linha);
                         int achievements = capturaAchievements(linha);
 
-                        String[] publishers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] publishers = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int publishersCount = capturaUltimosArrays(linha, publishers);
-                        String[] developers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] developers = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int developersCount = capturaUltimosArrays(linha, developers);
-                        String[] categories = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] categories = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int categoriesCount = capturaUltimosArrays(linha, categories);
-                        String[] genres = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] genres = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int genresCount = capturaUltimosArrays(linha, genres);
-                        String[] tags = new String[NoArrayListHDR.MAX_INNER_ARRAY];
+                        String[] tags = new String[ConstantesHashRehash.MAX_INNER_ARRAY];
                         int tagsCount = capturaUltimosArrays(linha, tags);
 
-                        GameBinarioHDR jogo = new GameBinarioHDR(id, name, releaseDate, estimatedOwners, price,
+                        GameRehash jogo = new GameRehash(id, name, releaseDate, estimatedOwners, price,
                                 supportedLanguages, supportedLanguagesCount, metacriticScore, userScore, achievements,
                                 publishers, publishersCount, developers, developersCount, categories, categoriesCount,
                                 genres, genresCount, tags, tagsCount);
@@ -281,16 +293,14 @@ class JogosDigitadosHashReserva {
         return hash;
     }
 
-    // Id igual
     static int igualId(int id) {
         for (int i = 0; i < idsTamanho; i++) {
             if (idsTamanho > 0 && Integer.parseInt(ids[0]) == id)
-                return 0; // Se encontrar, retorna sempre 0, o índice do primeiro elemento
+                return 0;
         }
         return -1;
     }
 
-    // Função para remover o ID da lista de pesquisa (sempre remove no índice 0)
     static void removerId(int indice) {
         if (indice == 0 && idsTamanho > 0) {
             for (int j = indice; j < idsTamanho - 1; j++) {
@@ -316,7 +326,6 @@ class JogosDigitadosHashReserva {
             posicaoLeitura++;
         }
         posicaoLeitura++;
-        // Trata o caso de nome entre aspas
         if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == '"') {
             posicaoLeitura++;
             while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
@@ -324,7 +333,7 @@ class JogosDigitadosHashReserva {
                 posicaoLeitura++;
             }
             if (posicaoLeitura < linhaCSV.length())
-                posicaoLeitura++; // Pula a aspa de fechamento
+                posicaoLeitura++;
         } else {
             while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
                 name += linhaCSV.charAt(posicaoLeitura);
@@ -342,7 +351,6 @@ class JogosDigitadosHashReserva {
             posicaoLeitura++;
 
         String dia = "", mes = "", ano = "";
-        // Pegando mês
         for (int i = 0; posicaoLeitura < linhaCSV.length() && i < 3; i++) {
             mes += linhaCSV.charAt(posicaoLeitura);
             posicaoLeitura++;
@@ -388,20 +396,16 @@ class JogosDigitadosHashReserva {
             default:
                 break;
         }
-        // Pulando espaço
         while (posicaoLeitura < linhaCSV.length() && !Character.isDigit(linhaCSV.charAt(posicaoLeitura)) && linhaCSV.charAt(posicaoLeitura) != ',') {
             posicaoLeitura++;
         }
-        // Pegando dia
         while (posicaoLeitura < linhaCSV.length() && Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
             dia += linhaCSV.charAt(posicaoLeitura);
             posicaoLeitura++;
         }
-        // Pulando espaço
         while (posicaoLeitura < linhaCSV.length() && !Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
             posicaoLeitura++;
         }
-        // Pegando ano
         while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
             ano += linhaCSV.charAt(posicaoLeitura);
             posicaoLeitura++;
