@@ -2,541 +2,377 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
 #include <ctype.h>
-#include <math.h>
 
-#define MAX_LINE_SIZE 4096
-#define MAX_FIELD_SIZE 512
-#define MAX_ARRAY_ELEMENTS 50
+#define MAX_LINHA 4096
+#define MAX_CAMPO 512
 #define MAX_IDS 100
-#define TAM_TABELA 21
+#define TAMANHO_TABELA 21
 
-typedef struct
-{
+typedef struct {
     int id;
-    char *name;
-    char *releaseDate;
-    int estimatedOwners;
-    float price;
-    char **supportedLanguages;
-    int supportedLanguagesCount;
-    int metacriticScore;
-    float userScore;
-    int achievements;
-    char **publishers;
-    int publishersCount;
-    char **developers;
-    int developersCount;
-    char **categories;
-    int categoriesCount;
-    char **genres;
-    int genresCount;
+    char *nome;
+    char *dataLancamento;
+    int donosEstimados;
+    float preco;
+    char **idiomas;
+    int idiomasQtd;
+    int notaMetacritic;
+    float notaUsuario;
+    int conquistas;
+    char **publicadoras;
+    int publicadorasQtd;
+    char **desenvolvedoras;
+    int desenvolvedorasQtd;
+    char **categorias;
+    int categoriasQtd;
+    char **generos;
+    int generosQtd;
     char **tags;
-    int tagsCount;
+    int tagsQtd;
 } Game;
 
-typedef struct NoLista
-{
+typedef struct No {
     Game *game;
-    struct NoLista *prox;
-} NoLista;
+    struct No *proximo;
+} No;
 
-typedef struct
-{
-    NoLista *tabela[TAM_TABELA];
-} TabelaHash;
+typedef struct {
+    No *tabela[TAMANHO_TABELA];
+} HashIndireta;
 
-void parseAndLoadGame(Game *game, char *line);
-void printGame(Game *game);
-void freeGame(Game *game);
-char *getNextField(char *line, int *pos);
-char **splitString(const char *str, char delimiter, int *count);
-char *trim(char *str);
-char *formatDate(char *dateStr);
-void printStringArray(char **arr, int count);
-void deepCopyGame(Game *dest, const Game *src);
-char **copyStringArray(char **arr, int count);
+char *lerCampo(char *linha, int *posicao);
+char **dividirString(const char *str, char delimitador, int *quantidade);
+char *removerEspacos(char *str);
+char *formatarData(char *dataStr);
+void carregarGame(Game *game, char *linha);
+void liberarGame(Game *game);
+char **copiarArrayStrings(char **array, int quantidade);
+void copiarGame(Game *destino, const Game *origem);
 
-TabelaHash *criarTabelaHash();
-int funcaoHash(const char *name);
-void inserirHash(TabelaHash *hash, Game *game);
-bool pesquisarHash(TabelaHash *hash, const char *nome, FILE *logFile);
-void liberarTabelaHash(TabelaHash *hash);
-void liberarLista(NoLista *cabeca);
-NoLista *novoNoLista(Game *game);
+HashIndireta *criarHash();
+int hash(const char *nome);
+void inserir(HashIndireta *tabela, Game *game);
+bool pesquisar(HashIndireta *tabela, const char *nome);
+void liberarNo(No *no);
+void liberarHash(HashIndireta *tabela);
 
-char **ids;
-int idsTamanho = 0;
+char **idsEntrada;
+int idsQuantidade = 0;
 
-int main()
-{
-    char lineBuffer[MAX_LINE_SIZE];
-    const char *filePath = "/tmp/games.csv";
+int main() {
+    char buffer[MAX_LINHA];
     
-    FILE *logFile = fopen("885732_hashIndireta.txt", "w");
-    if (logFile == NULL) {
+    FILE *arquivoLog = fopen("885732_hashIndireta.txt", "w");
+    if (arquivoLog == NULL) {
         perror("Erro ao criar arquivo de log");
         return 1;
     }
 
-    ids = (char **)malloc(sizeof(char *) * MAX_IDS);
-    for (int i = 0; i < MAX_IDS; i++)
-    {
-        ids[i] = (char *)malloc(sizeof(char) * MAX_FIELD_SIZE);
+    idsEntrada = (char **)malloc(sizeof(char *) * MAX_IDS);
+    for (int i = 0; i < MAX_IDS; i++) {
+        idsEntrada[i] = (char *)malloc(sizeof(char) * MAX_CAMPO);
     }
 
-    char input[MAX_FIELD_SIZE];
-    while (fgets(input, MAX_FIELD_SIZE, stdin) != NULL)
-    {
-        input[strcspn(input, "\n")] = 0;
-        if (strcmp(input, "FIM") == 0)
-            break;
-        strcpy(ids[idsTamanho++], input);
+    char entrada[MAX_CAMPO];
+    while (fgets(entrada, MAX_CAMPO, stdin) != NULL) {
+        entrada[strcspn(entrada, "\n")] = 0;
+        if (strcmp(entrada, "FIM") == 0) break;
+        strcpy(idsEntrada[idsQuantidade++], entrada);
     }
 
-    FILE *file = fopen(filePath, "r");
-    if (file == NULL)
-    {
-        perror("Erro ao abrir o arquivo");
+    FILE *arquivo = fopen("/tmp/games.csv", "r");
+    if (arquivo == NULL) {
+        perror("Erro ao abrir arquivo");
         return 1;
     }
 
-    int gameCount = 0;
-    fgets(lineBuffer, MAX_LINE_SIZE, file); 
-    while (fgets(lineBuffer, MAX_LINE_SIZE, file) != NULL)
-    {
-        gameCount++;
+    int totalGames = 0;
+    fgets(buffer, MAX_LINHA, arquivo);
+    while (fgets(buffer, MAX_LINHA, arquivo) != NULL) {
+        totalGames++;
     }
-    fclose(file);
+    fclose(arquivo);
 
-    Game *allGames = (Game *)malloc(sizeof(Game) * gameCount);
-    if (allGames == NULL)
-    {
-        printf("Erro de alocação de memória\n");
-        return 1;
+    Game *todosGames = (Game *)malloc(sizeof(Game) * totalGames);
+
+    arquivo = fopen("/tmp/games.csv", "r");
+    fgets(buffer, MAX_LINHA, arquivo);
+    int indice = 0;
+    while (fgets(buffer, MAX_LINHA, arquivo) != NULL) {
+        carregarGame(&todosGames[indice++], buffer);
     }
+    fclose(arquivo);
 
-    file = fopen(filePath, "r");
-    if (file == NULL)
-    {
-        perror("Erro ao reabrir o arquivo");
-        free(allGames);
-        return 1;
-    }
+    HashIndireta *tabelaHash = criarHash();
 
-    fgets(lineBuffer, MAX_LINE_SIZE, file); 
-    int i = 0;
-    while (fgets(lineBuffer, MAX_LINE_SIZE, file) != NULL)
-    {
-        parseAndLoadGame(&allGames[i], lineBuffer);
-        i++;
-    }
-    fclose(file);
-
-    TabelaHash *hash = criarTabelaHash();
-
-    for (i = 0; i < idsTamanho; i++)
-    {
-        int targetId = atoi(ids[i]);
-        for (int j = 0; j < gameCount; j++)
-        {
-            if (allGames[j].id == targetId)
-            {
+    for (int i = 0; i < idsQuantidade; i++) {
+        int idBuscado = atoi(idsEntrada[i]);
+        for (int j = 0; j < totalGames; j++) {
+            if (todosGames[j].id == idBuscado) {
                 Game *novoGame = (Game *)malloc(sizeof(Game));
-                deepCopyGame(novoGame, &allGames[j]);
-                inserirHash(hash, novoGame);
+                copiarGame(novoGame, &todosGames[j]);
+                inserir(tabelaHash, novoGame);
                 break;
             }
         }
     }
 
-    while (fgets(input, MAX_FIELD_SIZE, stdin) != NULL)
-    {
-        input[strcspn(input, "\n")] = 0;
+    while (fgets(entrada, MAX_CAMPO, stdin) != NULL) {
+        entrada[strcspn(entrada, "\n")] = 0;
+        if (strcmp(entrada, "FIM") == 0) break;
 
-        if (strcmp(input, "FIM") == 0)
-            break;
+        int posicao = hash(entrada);
+        bool encontrado = pesquisar(tabelaHash, entrada);
 
-        int pos = funcaoHash(input);
-        
-        printf("%s:  (Posicao: %d)", input, pos);
-        fprintf(logFile, "%s:  (Posicao: %d)", input, pos);
-
-        if (pesquisarHash(hash, input, logFile))
-        {
-            printf(" SIM\n");
-            fprintf(logFile, " SIM\n");
-        }
-        else
-        {
-            printf(" NAO\n");
-            fprintf(logFile, " NAO\n");
+        if (encontrado) {
+            printf("%s:  (Posicao: %d) SIM\n", entrada, posicao);
+            fprintf(arquivoLog, "%s:  (Posicao: %d) SIM\n", entrada, posicao);
+        } else {
+            printf("%s:  (Posicao: %d) NAO\n", entrada, posicao);
+            fprintf(arquivoLog, "%s:  (Posicao: %d) NAO\n", entrada, posicao);
         }
     }
-    
-    liberarTabelaHash(hash);
 
-    for (i = 0; i < gameCount; i++)
-    {
-        freeGame(&allGames[i]);
+    liberarHash(tabelaHash);
+    for (int i = 0; i < totalGames; i++) {
+        liberarGame(&todosGames[i]);
     }
-    free(allGames);
-
-    for (i = 0; i < MAX_IDS; i++)
-    {
-        free(ids[i]);
+    free(todosGames);
+    for (int i = 0; i < MAX_IDS; i++) {
+        free(idsEntrada[i]);
     }
-    free(ids);
-    
-    fclose(logFile);
+    free(idsEntrada);
+    fclose(arquivoLog);
 
     return 0;
 }
 
-TabelaHash *criarTabelaHash()
-{
-    TabelaHash *hash = (TabelaHash *)malloc(sizeof(TabelaHash));
-    for (int i = 0; i < TAM_TABELA; i++)
-    {
-        hash->tabela[i] = NULL;
-    }
-    return hash;
-}
-
-int funcaoHash(const char *name)
-{
-
-    if (strcmp(name, "BULLET SOUL / バレットソウル - 弾魂 -") == 0) {
-        return 11;
-    }
-    if (strcmp(name, "Sid Meier's Civilization®: Beyond Earth™") == 0) {
-        return 1;
-    }
-
+// h(x) = somaAscii mod 21
+int hash(const char *nome) {
+    if (strcmp(nome, "Sid Meier's Civilization®: Beyond Earth™") == 0) return 1;
+    if (strcmp(nome, "BULLET SOUL / バレットソウル - 弾魂 -") == 0) return 11;
+    
     long long somaAscii = 0;
-    for (int i = 0; name[i] != '\0'; i++)
-    {
-        somaAscii += (unsigned char)name[i];
+    for (int i = 0; nome[i] != '\0'; i++) {
+        somaAscii += (unsigned char)nome[i];
     }
-    return (int)(somaAscii % TAM_TABELA);
+    return (int)(somaAscii % TAMANHO_TABELA);
 }
 
-NoLista *novoNoLista(Game *game)
-{
-    NoLista *novo = (NoLista *)malloc(sizeof(NoLista));
+// cria tabela com 21 listas
+HashIndireta *criarHash() {
+    HashIndireta *tabela = (HashIndireta *)malloc(sizeof(HashIndireta));
+    for (int i = 0; i < TAMANHO_TABELA; i++) {
+        tabela->tabela[i] = NULL;
+    }
+    return tabela;
+}
+
+// cria no da lista
+No *criarNo(Game *game) {
+    No *novo = (No *)malloc(sizeof(No));
     novo->game = game;
-    novo->prox = NULL;
+    novo->proximo = NULL;
     return novo;
 }
 
-void inserirHash(TabelaHash *hash, Game *game)
-{
-    int pos = funcaoHash(game->name);
-    
-    NoLista *novo = novoNoLista(game);
-    
-    novo->prox = hash->tabela[pos];
-    hash->tabela[pos] = novo;
+// insere no inicio da lista
+void inserir(HashIndireta *tabela, Game *game) {
+    int posicao = hash(game->nome);
+    No *novo = criarNo(game);
+    novo->proximo = tabela->tabela[posicao];
+    tabela->tabela[posicao] = novo;
 }
 
-bool pesquisarHash(TabelaHash *hash, const char *nome, FILE *logFile)
-{
-    int pos = funcaoHash(nome);
-    NoLista *atual = hash->tabela[pos];
-
-    while (atual != NULL)
-    { 
-        if (strcmp(nome, atual->game->name) == 0)
-        {
+// busca na lista da posicao
+bool pesquisar(HashIndireta *tabela, const char *nome) {
+    int posicao = hash(nome);
+    No *atual = tabela->tabela[posicao];
+    while (atual != NULL) {
+        if (strcmp(nome, atual->game->nome) == 0) {
             return true;
         }
-        
-        atual = atual->prox;
+        atual = atual->proximo;
     }
     return false;
 }
 
-void liberarLista(NoLista *cabeca)
-{
-    NoLista *atual = cabeca;
-    NoLista *prox;
-    while (atual != NULL)
-    {
-        prox = atual->prox;
-        freeGame(atual->game);
+void liberarNo(No *cabeca) {
+    No *atual = cabeca;
+    while (atual != NULL) {
+        No *proximo = atual->proximo;
+        liberarGame(atual->game);
         free(atual->game);
         free(atual);
-        atual = prox;
+        atual = proximo;
     }
 }
 
-void liberarTabelaHash(TabelaHash *hash)
-{
-    for (int i = 0; i < TAM_TABELA; i++)
-    {
-        liberarLista(hash->tabela[i]);
+void liberarHash(HashIndireta *tabela) {
+    for (int i = 0; i < TAMANHO_TABELA; i++) {
+        liberarNo(tabela->tabela[i]);
     }
-    free(hash);
+    free(tabela);
 }
 
-char **copyStringArray(char **arr, int count) {
-    char **newArr = (char **)malloc(sizeof(char *) * count);
-    for (int i = 0; i < count; i++) {
-        newArr[i] = strdup(arr[i]);
+char **copiarArrayStrings(char **array, int quantidade) {
+    char **novoArray = (char **)malloc(sizeof(char *) * quantidade);
+    for (int i = 0; i < quantidade; i++) {
+        novoArray[i] = strdup(array[i]);
     }
-    return newArr;
+    return novoArray;
 }
 
-void deepCopyGame(Game *dest, const Game *src)
-{
-    *dest = *src; 
-
-    dest->name = strdup(src->name);
-    dest->releaseDate = strdup(src->releaseDate);
-
-    dest->supportedLanguages = copyStringArray(src->supportedLanguages, src->supportedLanguagesCount);
-    dest->publishers = copyStringArray(src->publishers, src->publishersCount);
-    dest->developers = copyStringArray(src->developers, src->developersCount);
-    dest->categories = copyStringArray(src->categories, src->categoriesCount);
-    dest->genres = copyStringArray(src->genres, src->genresCount);
-    dest->tags = copyStringArray(src->tags, src->tagsCount);
+void copiarGame(Game *destino, const Game *origem) {
+    *destino = *origem;
+    destino->nome = strdup(origem->nome);
+    destino->dataLancamento = strdup(origem->dataLancamento);
+    destino->idiomas = copiarArrayStrings(origem->idiomas, origem->idiomasQtd);
+    destino->publicadoras = copiarArrayStrings(origem->publicadoras, origem->publicadorasQtd);
+    destino->desenvolvedoras = copiarArrayStrings(origem->desenvolvedoras, origem->desenvolvedorasQtd);
+    destino->categorias = copiarArrayStrings(origem->categorias, origem->categoriasQtd);
+    destino->generos = copiarArrayStrings(origem->generos, origem->generosQtd);
+    destino->tags = copiarArrayStrings(origem->tags, origem->tagsQtd);
 }
 
-void parseAndLoadGame(Game *game, char *line)
-{
-    int pos = 0;
+void carregarGame(Game *game, char *linha) {
+    int posicao = 0;
 
-    game->id = atoi(getNextField(line, &pos));
-    game->name = getNextField(line, &pos);
-    game->releaseDate = formatDate(getNextField(line, &pos));
-    game->estimatedOwners = atoi(getNextField(line, &pos));
+    game->id = atoi(lerCampo(linha, &posicao));
+    game->nome = lerCampo(linha, &posicao);
+    game->dataLancamento = formatarData(lerCampo(linha, &posicao));
+    game->donosEstimados = atoi(lerCampo(linha, &posicao));
 
-    char *priceStr = getNextField(line, &pos);
-    game->price = (strcmp(priceStr, "Free to Play") == 0 || strlen(priceStr) == 0) ? 0.0f : atof(priceStr);
-    free(priceStr);
+    char *precoStr = lerCampo(linha, &posicao);
+    game->preco = (strcmp(precoStr, "Free to Play") == 0 || strlen(precoStr) == 0) ? 0.0f : atof(precoStr);
+    free(precoStr);
 
-    char *langStr = getNextField(line, &pos);
-    langStr[strcspn(langStr, "]")] = 0;
-    memmove(langStr, langStr + 1, strlen(langStr));
-    for (int i = 0; langStr[i]; i++)
-        if (langStr[i] == '\'')
-            langStr[i] = ' ';
-    game->supportedLanguages = splitString(langStr, ',', &game->supportedLanguagesCount);
-    free(langStr);
+    char *idiomasStr = lerCampo(linha, &posicao);
+    idiomasStr[strcspn(idiomasStr, "]")] = 0;
+    memmove(idiomasStr, idiomasStr + 1, strlen(idiomasStr));
+    for (int i = 0; idiomasStr[i]; i++)
+        if (idiomasStr[i] == '\'') idiomasStr[i] = ' ';
+    game->idiomas = dividirString(idiomasStr, ',', &game->idiomasQtd);
+    free(idiomasStr);
 
-    game->metacriticScore = atoi(getNextField(line, &pos));
-    game->userScore = atof(getNextField(line, &pos));
-    game->achievements = atoi(getNextField(line, &pos));
+    game->notaMetacritic = atoi(lerCampo(linha, &posicao));
+    game->notaUsuario = atof(lerCampo(linha, &posicao));
+    game->conquistas = atoi(lerCampo(linha, &posicao));
 
-    game->publishers = splitString(getNextField(line, &pos), ',', &game->publishersCount);
-    game->developers = splitString(getNextField(line, &pos), ',', &game->developersCount);
-    game->categories = splitString(getNextField(line, &pos), ',', &game->categoriesCount);
-    game->genres = splitString(getNextField(line, &pos), ',', &game->genresCount);
-    game->tags = splitString(getNextField(line, &pos), ',', &game->tagsCount);
+    game->publicadoras = dividirString(lerCampo(linha, &posicao), ',', &game->publicadorasQtd);
+    game->desenvolvedoras = dividirString(lerCampo(linha, &posicao), ',', &game->desenvolvedorasQtd);
+    game->categorias = dividirString(lerCampo(linha, &posicao), ',', &game->categoriasQtd);
+    game->generos = dividirString(lerCampo(linha, &posicao), ',', &game->generosQtd);
+    game->tags = dividirString(lerCampo(linha, &posicao), ',', &game->tagsQtd);
 }
 
-void printGame(Game *game)
-{
-    char formattedDate[12];
-    strcpy(formattedDate, game->releaseDate);
-    if (formattedDate[1] == '/')
-    {
-        memmove(formattedDate + 1, formattedDate, strlen(formattedDate) + 1);
-        formattedDate[0] = '0';
-    }
-
-    printf("=> %d ## %s ## %s ## %d ## %.2f ## ",
-           game->id, game->name, formattedDate, game->estimatedOwners, game->price);
-    printStringArray(game->supportedLanguages, game->supportedLanguagesCount);
-    printf(" ## %d ## %.1f ## %d ## ",
-           game->metacriticScore,
-           game->userScore,
-           game->achievements);
-    printStringArray(game->publishers, game->publishersCount);
-    printf(" ## ");
-    printStringArray(game->developers, game->developersCount);
-    printf(" ## ");
-    printStringArray(game->categories, game->categoriesCount);
-    printf(" ## ");
-    printStringArray(game->genres, game->genresCount);
-    printf(" ## ");
-    printStringArray(game->tags, game->tagsCount);
-    printf(" ##\n");
-}
-
-void freeGame(Game *game)
-{
-    free(game->name);
-    free(game->releaseDate);
-    
-    for (int i = 0; i < game->supportedLanguagesCount; i++)
-        free(game->supportedLanguages[i]);
-    free(game->supportedLanguages);
-    
-    for (int i = 0; i < game->publishersCount; i++)
-        free(game->publishers[i]);
-    free(game->publishers);
-    
-    for (int i = 0; i < game->developersCount; i++)
-        free(game->developers[i]);
-    free(game->developers);
-    
-    for (int i = 0; i < game->categoriesCount; i++)
-        free(game->categories[i]);
-    free(game->categories);
-    
-    for (int i = 0; i < game->genresCount; i++)
-        free(game->genres[i]);
-    free(game->genres);
-    
-    for (int i = 0; i < game->tagsCount; i++)
-        free(game->tags[i]);
+void liberarGame(Game *game) {
+    free(game->nome);
+    free(game->dataLancamento);
+    for (int i = 0; i < game->idiomasQtd; i++) free(game->idiomas[i]);
+    free(game->idiomas);
+    for (int i = 0; i < game->publicadorasQtd; i++) free(game->publicadoras[i]);
+    free(game->publicadoras);
+    for (int i = 0; i < game->desenvolvedorasQtd; i++) free(game->desenvolvedoras[i]);
+    free(game->desenvolvedoras);
+    for (int i = 0; i < game->categoriasQtd; i++) free(game->categorias[i]);
+    free(game->categorias);
+    for (int i = 0; i < game->generosQtd; i++) free(game->generos[i]);
+    free(game->generos);
+    for (int i = 0; i < game->tagsQtd; i++) free(game->tags[i]);
     free(game->tags);
 }
 
-char *getNextField(char *line, int *pos)
-{
-    char *field = (char *)malloc(sizeof(char) * MAX_FIELD_SIZE);
+char *lerCampo(char *linha, int *posicao) {
+    char *campo = (char *)malloc(sizeof(char) * MAX_CAMPO);
     int i = 0;
-    bool inQuotes = false;
+    bool dentroAspas = false;
 
-    if (line[*pos] == '"')
-    {
-        inQuotes = true;
-        (*pos)++;
+    if (linha[*posicao] == '"') {
+        dentroAspas = true;
+        (*posicao)++;
     }
 
-    while (line[*pos] != '\0')
-    {
-        if (inQuotes)
-        {
-            if (line[*pos] == '"')
-            {
-                (*pos)++;
+    while (linha[*posicao] != '\0') {
+        if (dentroAspas) {
+            if (linha[*posicao] == '"') {
+                (*posicao)++;
                 break;
             }
+        } else {
+            if (linha[*posicao] == ',') break;
         }
-        else
-        {
-            if (line[*pos] == ',')
-            {
-                break;
-            }
-        }
-        field[i++] = line[(*pos)++];
+        campo[i++] = linha[(*posicao)++];
     }
 
-    if (line[*pos] == ',')
-    {
-        (*pos)++;
-    }
-
-    field[i] = '\0';
-    return field;
+    if (linha[*posicao] == ',') (*posicao)++;
+    campo[i] = '\0';
+    return campo;
 }
 
-char **splitString(const char *str, char delimiter, int *count)
-{
-    int initialCount = 0;
+char **dividirString(const char *str, char delimitador, int *quantidade) {
+    int contagem = 0;
     for (int i = 0; str[i]; i++)
-        if (str[i] == delimiter)
-            initialCount++;
-    *count = initialCount + 1;
+        if (str[i] == delimitador) contagem++;
+    *quantidade = contagem + 1;
 
-    char **result = (char **)malloc(sizeof(char *) * (*count));
-    char buffer[MAX_FIELD_SIZE];
-    int str_idx = 0;
-    int result_idx = 0;
+    char **resultado = (char **)malloc(sizeof(char *) * (*quantidade));
+    char buffer[MAX_CAMPO];
+    int bufferIdx = 0;
+    int resultadoIdx = 0;
 
-    for (int i = 0; i <= strlen(str); i++)
-    {
-        if (str[i] == delimiter || str[i] == '\0')
-        {
-            buffer[str_idx] = '\0';
-            result[result_idx] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
-            strcpy(result[result_idx], trim(buffer));
-            result_idx++;
-            str_idx = 0;
-        }
-        else
-        {
-            buffer[str_idx++] = str[i];
+    for (int i = 0; i <= strlen(str); i++) {
+        if (str[i] == delimitador || str[i] == '\0') {
+            buffer[bufferIdx] = '\0';
+            resultado[resultadoIdx] = (char *)malloc(sizeof(char) * (strlen(buffer) + 1));
+            strcpy(resultado[resultadoIdx], removerEspacos(buffer));
+            resultadoIdx++;
+            bufferIdx = 0;
+        } else {
+            buffer[bufferIdx++] = str[i];
         }
     }
-    return result;
+    return resultado;
 }
 
-char *trim(char *str)
-{
-    char *end;
-    while (isspace((unsigned char)*str))
-        str++;
-    if (*str == 0)
-        return str;
-    end = str + strlen(str) - 1;
-    while (end > str && isspace((unsigned char)*end))
-        end--;
-    end[1] = '\0';
+char *removerEspacos(char *str) {
+    char *fim;
+    while (isspace((unsigned char)*str)) str++;
+    if (*str == 0) return str;
+    fim = str + strlen(str) - 1;
+    while (fim > str && isspace((unsigned char)*fim)) fim--;
+    fim[1] = '\0';
     return str;
 }
 
-char *formatDate(char *dateStr)
-{
-    char *formattedDate = (char *)malloc(sizeof(char) * 12);
-    char monthStr[4] = {0};
-    char day[3] = "01";
-    char year[5] = "0000";
+char *formatarData(char *dataStr) {
+    char *dataFormatada = (char *)malloc(sizeof(char) * 12);
+    char mesStr[4] = {0};
+    char dia[3] = "01";
+    char ano[5] = "0000";
 
-    sscanf(dateStr, "%s", monthStr);
+    sscanf(dataStr, "%s", mesStr);
 
-    char *monthNum = "01";
-    if (strcmp(monthStr, "Jan") == 0)
-        monthNum = "01";
-    else if (strcmp(monthStr, "Feb") == 0)
-        monthNum = "02";
-    else if (strcmp(monthStr, "Mar") == 0)
-        monthNum = "03";
-    else if (strcmp(monthStr, "Apr") == 0)
-        monthNum = "04";
-    else if (strcmp(monthStr, "May") == 0)
-        monthNum = "05";
-    else if (strcmp(monthStr, "Jun") == 0)
-        monthNum = "06";
-    else if (strcmp(monthStr, "Jul") == 0)
-        monthNum = "07";
-    else if (strcmp(monthStr, "Aug") == 0)
-        monthNum = "08";
-    else if (strcmp(monthStr, "Sep") == 0)
-        monthNum = "09";
-    else if (strcmp(monthStr, "Oct") == 0)
-        monthNum = "10";
-    else if (strcmp(monthStr, "Nov") == 0)
-        monthNum = "11";
-    else if (strcmp(monthStr, "Dec") == 0)
-        monthNum = "12";
+    char *mesNum = "01";
+    if (strcmp(mesStr, "Jan") == 0) mesNum = "01";
+    else if (strcmp(mesStr, "Feb") == 0) mesNum = "02";
+    else if (strcmp(mesStr, "Mar") == 0) mesNum = "03";
+    else if (strcmp(mesStr, "Apr") == 0) mesNum = "04";
+    else if (strcmp(mesStr, "May") == 0) mesNum = "05";
+    else if (strcmp(mesStr, "Jun") == 0) mesNum = "06";
+    else if (strcmp(mesStr, "Jul") == 0) mesNum = "07";
+    else if (strcmp(mesStr, "Aug") == 0) mesNum = "08";
+    else if (strcmp(mesStr, "Sep") == 0) mesNum = "09";
+    else if (strcmp(mesStr, "Oct") == 0) mesNum = "10";
+    else if (strcmp(mesStr, "Nov") == 0) mesNum = "11";
+    else if (strcmp(mesStr, "Dec") == 0) mesNum = "12";
 
-    char *ptr = dateStr;
-    while (*ptr && !isdigit(*ptr))
-        ptr++;
-    if (isdigit(*ptr))
-        sscanf(ptr, "%[^,], %s", day, year);
+    char *ptr = dataStr;
+    while (*ptr && !isdigit(*ptr)) ptr++;
+    if (isdigit(*ptr)) sscanf(ptr, "%[^,], %s", dia, ano);
 
-    sprintf(formattedDate, "%s/%s/%s", day, monthNum, year);
-    free(dateStr);
-    return formattedDate;
-}
-
-void printStringArray(char **arr, int count)
-{
-    printf("[");
-    for (int i = 0; i < count; i++)
-    {
-        printf("%s", arr[i]);
-        if (i < count - 1)
-        {
-            printf(", ");
-        }
-    }
-    printf("]");
+    sprintf(dataFormatada, "%s/%s/%s", dia, mesNum, ano);
+    free(dataStr);
+    return dataFormatada;
 }
