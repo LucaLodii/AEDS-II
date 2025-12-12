@@ -1,5 +1,3 @@
-package tps.tp08;
-
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -92,80 +90,80 @@ class GameBinarioHDR {
 // Classe Hash
 class HashReserva {
     GameBinarioHDR tabela[];
-    int m1, m2, m, reserva;
+    int tamanhoPrincipal, tamanhoReserva, tamanhoTotal, indiceReserva;
 
     public HashReserva() {
         this(21, 9);
     }
 
-    public HashReserva(int m1, int m2) {
-        this.m1 = m1;
-        this.m2 = m2;
-        this.m = m1 + m2;
-        this.tabela = new GameBinarioHDR[this.m];
-        for (int i = 0; i < m1; i++) {
+    public HashReserva(int tamanhoPrincipal, int tamanhoReserva) {
+        this.tamanhoPrincipal = tamanhoPrincipal;
+        this.tamanhoReserva = tamanhoReserva;
+        this.tamanhoTotal = tamanhoPrincipal + tamanhoReserva;
+        this.tabela = new GameBinarioHDR[this.tamanhoTotal];
+        for (int i = 0; i < tamanhoPrincipal; i++) {
             tabela[i] = null;
         }
-        reserva = 0;
+        indiceReserva = 0;
     }
 
-    public int h(int indice) {
-        return indice % m1;
+    public int hash(int somaAscii) {
+        return somaAscii % tamanhoPrincipal;
     }
 
     public boolean inserir(GameBinarioHDR game) {
-        boolean resp = false;
+        boolean inserido = false;
         if (game != null) {
-            int indice = 0;
+            int somaAscii = 0;
             for (int i = 0; i < game.name.length(); i++) {
-                indice += (int) game.name.charAt(i);
+                somaAscii += (int) game.name.charAt(i);
             }
-            int pos = h(indice);
-            if (tabela[pos] == null) {
-                tabela[pos] = game;
-                resp = true;
-            } else if (reserva < m2) {
-                tabela[m1 + reserva] = game;
-                reserva++;
-                resp = true;
+            int posicao = hash(somaAscii);
+            if (tabela[posicao] == null) {
+                tabela[posicao] = game;
+                inserido = true;
+            } else if (indiceReserva < tamanhoReserva) {
+                tabela[tamanhoPrincipal + indiceReserva] = game;
+                indiceReserva++;
+                inserido = true;
             }
         }
-        return resp;
+        return inserido;
     }
 
     public boolean pesquisar(String name) {
-        boolean resp = false;
-        int indice = 0;
+        boolean encontrado = false;
+        int somaAscii = 0;
         for (int i = 0; i < name.length(); i++) {
-            indice += (int) name.charAt(i);
+            somaAscii += (int) name.charAt(i);
         }
-        int pos = h(indice);
-        if (tabela[pos] != null && tabela[pos].name.equals(name)) {
-            resp = true;
-        } else if (tabela[pos] != null) {
-            for (int i = 0; i < reserva; i++) {
-                if (tabela[m1 + i].name.equals(name)) {
-                    pos = m1 + i;
-                    resp = true;
-                    i = reserva;
+        int posicao = hash(somaAscii);
+        if (tabela[posicao] != null && tabela[posicao].name.equals(name)) {
+            encontrado = true;
+        } else if (tabela[posicao] != null) {
+            for (int i = 0; i < indiceReserva; i++) {
+                if (tabela[tamanhoPrincipal + i].name.equals(name)) {
+                    posicao = tamanhoPrincipal + i;
+                    encontrado = true;
+                    i = indiceReserva;
                 }
             }
         }
         // Imprime o resultado da busca
-        if (resp) {
-            System.out.println(name + ":  (Posicao: " + pos + ") SIM");
-            HashDiretoComReserva.logWriter.println(name + ":  (Posicao: " + pos + ") SIM");
+        if (encontrado) {
+            System.out.println(name + ":  (Posicao: " + posicao + ") SIM");
+            HashDiretaComReserva.logWriter.println(name + ":  (Posicao: " + posicao + ") SIM");
         }
         else {
-            System.out.println(name + ":  (Posicao: " + pos + ") NAO");
-            HashDiretoComReserva.logWriter.println(name + ":  (Posicao: " + pos + ") NAO");
+            System.out.println(name + ":  (Posicao: " + posicao + ") NAO");
+            HashDiretaComReserva.logWriter.println(name + ":  (Posicao: " + posicao + ") NAO");
         }
-        return resp;
+        return encontrado;
     }
 }
 
 // Classe Principal
-public class HashDiretoComReserva {
+public class HashDiretaComReserva {
     public static Scanner sc;
     public static PrintWriter logWriter;
 
@@ -184,13 +182,13 @@ public class HashDiretoComReserva {
         // Capturando os ids que serão adicionados
         String entrada = sc.nextLine();
         String ids[] = new String[2000];
-        int tam = 0;
-        for (; !entrada.equals("FIM"); tam++) {
-            ids[tam] = entrada;
+        int quantidadeIds = 0;
+        for (; !entrada.equals("FIM"); quantidadeIds++) {
+            ids[quantidadeIds] = entrada;
             entrada = sc.nextLine();
         }
-        // Criando a árvore
-        HashReserva hash = JogosDigitadosHashReserva.inicializacao(ids, tam);
+        // Criando a tabela hash
+        HashReserva hash = JogosDigitadosHashReserva.inicializacao(ids, quantidadeIds);
 
         // Vendo a posição na árvore e mostrando
         entrada = sc.nextLine();
@@ -205,8 +203,8 @@ public class HashDiretoComReserva {
 
 // Leitura de Arquivo
 class JogosDigitadosHashReserva {
-    public static Scanner sc;
-    static int contador = 0;
+    public static Scanner leitorArquivo;
+    static int posicaoLeitura = 0;
     static String[] ids;
     static int idsTamanho;
 
@@ -226,15 +224,15 @@ class JogosDigitadosHashReserva {
                     return hash;
                 }
 
-                InputStream is = new FileInputStream(arquivo);
-                Scanner sc = new Scanner(is);
+                InputStream inputStream = new FileInputStream(arquivo);
+                leitorArquivo = new Scanner(inputStream);
 
-                if (sc.hasNextLine())
-                    sc.nextLine();
+                if (leitorArquivo.hasNextLine())
+                    leitorArquivo.nextLine();
 
-                while (sc.hasNextLine() && indiceEncontrado == -1) {
-                    String linha = sc.nextLine();
-                    contador = 0;
+                while (leitorArquivo.hasNextLine() && indiceEncontrado == -1) {
+                    String linha = leitorArquivo.nextLine();
+                    posicaoLeitura = 0;
 
                     int id = capturaId(linha);
                     indiceEncontrado = igualId(id);
@@ -252,15 +250,15 @@ class JogosDigitadosHashReserva {
                         int achievements = capturaAchievements(linha);
 
                         String[] publishers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
-                        int publishersCount = capturaUltimosArryays(linha, publishers);
+                        int publishersCount = capturaUltimosArrays(linha, publishers);
                         String[] developers = new String[NoArrayListHDR.MAX_INNER_ARRAY];
-                        int developersCount = capturaUltimosArryays(linha, developers);
+                        int developersCount = capturaUltimosArrays(linha, developers);
                         String[] categories = new String[NoArrayListHDR.MAX_INNER_ARRAY];
-                        int categoriesCount = capturaUltimosArryays(linha, categories);
+                        int categoriesCount = capturaUltimosArrays(linha, categories);
                         String[] genres = new String[NoArrayListHDR.MAX_INNER_ARRAY];
-                        int genresCount = capturaUltimosArryays(linha, genres);
+                        int genresCount = capturaUltimosArrays(linha, genres);
                         String[] tags = new String[NoArrayListHDR.MAX_INNER_ARRAY];
-                        int tagsCount = capturaUltimosArryays(linha, tags);
+                        int tagsCount = capturaUltimosArrays(linha, tags);
 
                         GameBinarioHDR jogo = new GameBinarioHDR(id, name, releaseDate, estimatedOwners, price,
                                 supportedLanguages, supportedLanguagesCount, metacriticScore, userScore, achievements,
@@ -272,8 +270,8 @@ class JogosDigitadosHashReserva {
                     }
                 }
 
-                sc.close();
-                is.close();
+                leitorArquivo.close();
+                inputStream.close();
 
             } catch (Exception e) {
                 System.out.println("Erro ao abrir ou ler o arquivo: " + e.getMessage());
@@ -303,51 +301,51 @@ class JogosDigitadosHashReserva {
         }
     }
 
-    static int capturaId(String jogo) {
+    static int capturaId(String linhaCSV) {
         int id = 0;
-        while (contador < jogo.length() && Character.isDigit(jogo.charAt(contador))) {
-            id = id * 10 + (jogo.charAt(contador) - '0');
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+            id = id * 10 + (linhaCSV.charAt(posicaoLeitura) - '0');
+            posicaoLeitura++;
         }
         return id;
     }
 
-    static String capturaName(String jogo) {
+    static String capturaName(String linhaCSV) {
         String name = "";
-        while (jogo.charAt(contador) != ',' && contador < jogo.length()) {
-            contador++;
+        while (linhaCSV.charAt(posicaoLeitura) != ',' && posicaoLeitura < linhaCSV.length()) {
+            posicaoLeitura++;
         }
-        contador++;
+        posicaoLeitura++;
         // Trata o caso de nome entre aspas
-        if (contador < jogo.length() && jogo.charAt(contador) == '"') {
-            contador++;
-            while (contador < jogo.length() && jogo.charAt(contador) != '"') {
-                name += jogo.charAt(contador);
-                contador++;
+        if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == '"') {
+            posicaoLeitura++;
+            while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
+                name += linhaCSV.charAt(posicaoLeitura);
+                posicaoLeitura++;
             }
-            if (contador < jogo.length())
-                contador++; // Pula a aspa de fechamento
+            if (posicaoLeitura < linhaCSV.length())
+                posicaoLeitura++; // Pula a aspa de fechamento
         } else {
-            while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-                name += jogo.charAt(contador);
-                contador++;
+            while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+                name += linhaCSV.charAt(posicaoLeitura);
+                posicaoLeitura++;
             }
         }
         return name;
     }
 
-    static String capturaReleaseDate(String jogo) {
-        while (contador < jogo.length() && jogo.charAt(contador) != '"') {
-            contador++;
+    static String capturaReleaseDate(String linhaCSV) {
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
+            posicaoLeitura++;
         }
-        if (contador < jogo.length())
-            contador++;
+        if (posicaoLeitura < linhaCSV.length())
+            posicaoLeitura++;
 
         String dia = "", mes = "", ano = "";
         // Pegando mês
-        for (int i = 0; contador < jogo.length() && i < 3; i++) {
-            mes += jogo.charAt(contador);
-            contador++;
+        for (int i = 0; posicaoLeitura < linhaCSV.length() && i < 3; i++) {
+            mes += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         mes = mes.trim();
         switch (mes) {
@@ -391,22 +389,22 @@ class JogosDigitadosHashReserva {
                 break;
         }
         // Pulando espaço
-        while (contador < jogo.length() && !Character.isDigit(jogo.charAt(contador)) && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && !Character.isDigit(linhaCSV.charAt(posicaoLeitura)) && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
         // Pegando dia
-        while (contador < jogo.length() && Character.isDigit(jogo.charAt(contador))) {
-            dia += jogo.charAt(contador);
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+            dia += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         // Pulando espaço
-        while (contador < jogo.length() && !Character.isDigit(jogo.charAt(contador))) {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && !Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+            posicaoLeitura++;
         }
         // Pegando ano
-        while (contador < jogo.length() && jogo.charAt(contador) != '"') {
-            ano += jogo.charAt(contador);
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
+            ano += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         if (dia.isEmpty())
             dia = "01";
@@ -417,18 +415,18 @@ class JogosDigitadosHashReserva {
         return dia + "/" + mes + "/" + ano;
     }
 
-    static int capturaEstimatedOwners(String jogo) {
+    static int capturaEstimatedOwners(String linhaCSV) {
         int estimatedOwners = 0;
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
-        contador++;
+        posicaoLeitura++;
         StringBuilder numStr = new StringBuilder();
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            if (Character.isDigit(jogo.charAt(contador))) {
-                numStr.append(jogo.charAt(contador));
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            if (Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+                numStr.append(linhaCSV.charAt(posicaoLeitura));
             }
-            contador++;
+            posicaoLeitura++;
         }
         try {
             estimatedOwners = Integer.parseInt(numStr.toString());
@@ -438,15 +436,15 @@ class JogosDigitadosHashReserva {
         return estimatedOwners;
     }
 
-    static float capturaPrice(String jogo) {
+    static float capturaPrice(String linhaCSV) {
         String price = "";
-        while (contador < jogo.length() && jogo.charAt(contador) != ',' && jogo.charAt(contador) != 'F'
-                && !Character.isDigit(jogo.charAt(contador))) {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',' && linhaCSV.charAt(posicaoLeitura) != 'F'
+                && !Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+            posicaoLeitura++;
         }
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            price += jogo.charAt(contador);
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            price += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         price = price.trim();
         if (price.isEmpty() || price.toLowerCase().contains("free to play")) {
@@ -460,38 +458,38 @@ class JogosDigitadosHashReserva {
         }
     }
 
-    static int capturaSupportedLanguages(String jogo, String[] supportedLanguages) {
-        int count = 0;
-        while (contador < jogo.length() && jogo.charAt(contador) != ']' && count < supportedLanguages.length) {
-            String lingua = "";
-            while (contador < jogo.length() && !Character.isAlphabetic(jogo.charAt(contador))) {
-                contador++;
+    static int capturaSupportedLanguages(String linhaCSV, String[] supportedLanguages) {
+        int quantidade = 0;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ']' && quantidade < supportedLanguages.length) {
+            String idioma = "";
+            while (posicaoLeitura < linhaCSV.length() && !Character.isAlphabetic(linhaCSV.charAt(posicaoLeitura))) {
+                posicaoLeitura++;
             }
-            while (contador < jogo.length() && jogo.charAt(contador) != ',' && jogo.charAt(contador) != ']') {
-                if (jogo.charAt(contador) != '"') {
-                    lingua += jogo.charAt(contador);
+            while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',' && linhaCSV.charAt(posicaoLeitura) != ']') {
+                if (linhaCSV.charAt(posicaoLeitura) != '"') {
+                    idioma += linhaCSV.charAt(posicaoLeitura);
                 }
-                contador++;
+                posicaoLeitura++;
             }
-            supportedLanguages[count++] = lingua.trim();
+            supportedLanguages[quantidade++] = idioma.trim();
         }
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
-        if (contador < jogo.length())
-            contador++;
-        return count;
+        if (posicaoLeitura < linhaCSV.length())
+            posicaoLeitura++;
+        return quantidade;
     }
 
-    static int capturaMetacriticScore(String jogo) {
+    static int capturaMetacriticScore(String linhaCSV) {
         String metacriticScore = "";
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
-        contador++;
-        while (contador < jogo.length() && Character.isDigit(jogo.charAt(contador))) {
-            metacriticScore += jogo.charAt(contador);
-            contador++;
+        posicaoLeitura++;
+        while (posicaoLeitura < linhaCSV.length() && Character.isDigit(linhaCSV.charAt(posicaoLeitura))) {
+            metacriticScore += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         if (metacriticScore.isEmpty())
             return -1;
@@ -499,15 +497,15 @@ class JogosDigitadosHashReserva {
             return Integer.parseInt(metacriticScore);
     }
 
-    static float capturaUserScore(String jogo) {
+    static float capturaUserScore(String linhaCSV) {
         String userScore = "";
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
-        contador++;
-        while (contador < jogo.length() && (Character.isDigit(jogo.charAt(contador)) || jogo.charAt(contador) == '.')) {
-            userScore += jogo.charAt(contador);
-            contador++;
+        posicaoLeitura++;
+        while (posicaoLeitura < linhaCSV.length() && (Character.isDigit(linhaCSV.charAt(posicaoLeitura)) || linhaCSV.charAt(posicaoLeitura) == '.')) {
+            userScore += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         if (userScore.isEmpty())
             return -1.0f;
@@ -515,15 +513,15 @@ class JogosDigitadosHashReserva {
             return Float.parseFloat(userScore);
     }
 
-    static int capturaAchievements(String jogo) {
+    static int capturaAchievements(String linhaCSV) {
         String achievements = "";
-        while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-            contador++;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+            posicaoLeitura++;
         }
-        contador++;
-        while (contador < jogo.length() && (Character.isDigit(jogo.charAt(contador)) || jogo.charAt(contador) == '.')) {
-            achievements += jogo.charAt(contador);
-            contador++;
+        posicaoLeitura++;
+        while (posicaoLeitura < linhaCSV.length() && (Character.isDigit(linhaCSV.charAt(posicaoLeitura)) || linhaCSV.charAt(posicaoLeitura) == '.')) {
+            achievements += linhaCSV.charAt(posicaoLeitura);
+            posicaoLeitura++;
         }
         if (achievements.isEmpty())
             return 0;
@@ -531,41 +529,41 @@ class JogosDigitadosHashReserva {
             return Integer.parseInt(achievements);
     }
 
-    static int capturaUltimosArryays(String jogo, String[] categoria) {
-        int count = 0;
-        while (contador < jogo.length() && jogo.charAt(contador) != '"') {
-            contador++;
+    static int capturaUltimosArrays(String linhaCSV, String[] arrayDestino) {
+        int quantidade = 0;
+        while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"') {
+            posicaoLeitura++;
         }
 
-        if (contador < jogo.length() && jogo.charAt(contador) == '"') {
-            contador++;
-            while (contador < jogo.length() && jogo.charAt(contador) != '"' && count < categoria.length) {
-                String parte = "";
-                while (contador < jogo.length() && jogo.charAt(contador) != ',' && jogo.charAt(contador) != '"') {
-                    parte += jogo.charAt(contador);
-                    contador++;
+        if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == '"') {
+            posicaoLeitura++;
+            while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != '"' && quantidade < arrayDestino.length) {
+                String elemento = "";
+                while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',' && linhaCSV.charAt(posicaoLeitura) != '"') {
+                    elemento += linhaCSV.charAt(posicaoLeitura);
+                    posicaoLeitura++;
                 }
-                categoria[count++] = parte.trim();
-                if (contador < jogo.length() && jogo.charAt(contador) == ',') {
-                    contador++;
+                arrayDestino[quantidade++] = elemento.trim();
+                if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == ',') {
+                    posicaoLeitura++;
                 }
             }
-            if (contador < jogo.length() && jogo.charAt(contador) == '"') {
-                contador++;
+            if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == '"') {
+                posicaoLeitura++;
             }
         } else {
-            if (count < categoria.length) {
-                String parte = "";
-                while (contador < jogo.length() && jogo.charAt(contador) != ',') {
-                    parte += jogo.charAt(contador);
-                    contador++;
+            if (quantidade < arrayDestino.length) {
+                String elemento = "";
+                while (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) != ',') {
+                    elemento += linhaCSV.charAt(posicaoLeitura);
+                    posicaoLeitura++;
                 }
-                categoria[count++] = parte;
+                arrayDestino[quantidade++] = elemento;
             }
         }
-        if (contador < jogo.length() && jogo.charAt(contador) == ',') {
-            contador++;
+        if (posicaoLeitura < linhaCSV.length() && linhaCSV.charAt(posicaoLeitura) == ',') {
+            posicaoLeitura++;
         }
-        return count;
+        return quantidade;
     }
 }
